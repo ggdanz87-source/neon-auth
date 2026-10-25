@@ -149,9 +149,36 @@
         .msg.theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
         
         .msg img { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; }
+
+        /* === UI VOICE NOTE (PIL SEPERTI WA) === */
+        .vn-container {
+            display: flex; align-items: center; gap: 12px;
+            min-width: 220px; padding: 4px;
+        }
+        .vn-play-btn {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); display: flex;
+            align-items: center; justify-content: center;
+            flex-shrink: 0; cursor: pointer; transition: 0.2s;
+        }
+        .msg.mine .vn-play-btn { background: rgba(0,0,0,0.15); color: #04121a; }
+        .msg.theirs .vn-play-btn { background: rgba(255,255,255,0.1); color: var(--accent); }
+        .vn-play-btn:hover { transform: scale(1.05); }
+        .vn-play-btn svg { width: 14px; height: 14px; fill: currentColor; }
         
-        /* Audio Player Custom */
-        .msg audio { width: 250px; margin-top: 5px; display: block; }
+        .vn-waveform {
+            flex: 1; height: 20px; display: flex; align-items: center;
+            gap: 2px; position: relative; opacity: 0.6;
+        }
+        .vn-waveform .bar {
+            width: 3px; background: currentColor; border-radius: 2px;
+            transition: height 0.1s;
+        }
+        .vn-duration { font-size: 11px; font-family: 'JetBrains Mono', monospace; opacity: 0.8; }
+        .msg.mine .vn-duration { color: #04121a; }
+        
+        /* Sembunyiin audio bawaan */
+        .vn-hidden-audio { display: none !important; }
 
         .composer {
             padding: 14px 18px; border-top: 1px solid var(--line);
@@ -166,7 +193,6 @@
         .composer input[type="text"]:focus { border-color: var(--accent-dim); }
         .composer input[type="text"]::placeholder { color: var(--text-mute); }
         
-        /* Tombol Aksi */
         .action-btn {
             width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
             background: transparent; border: 1px solid var(--line); border-radius: 9px;
@@ -291,13 +317,11 @@
             <div class="messages" id="messages"></div>
 
             <div class="composer" id="composer">
-                <!-- Tombol Upload Gambar -->
                 <button class="action-btn" id="attachBtn" title="Kirim Gambar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                 </button>
                 <input type="file" id="fileInput" accept="image/*">
 
-                <!-- Tombol Rekam VN -->
                 <button class="action-btn" id="recordBtn" title="Rekam Suara">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 </button>
@@ -342,6 +366,10 @@
         const OWNER_PHONE = '085290324268';
 
         const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        
+        // Ikon Play & Pause buat VN
+        const PLAY_SVG = '<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        const PAUSE_SVG = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
 
         const TOXIC_WORDS = [
             'anjing', 'anjg', 'anjir', 'anjay', 'asw', 'asu', 'bangsat', 'bgst',
@@ -391,7 +419,6 @@
         let activeMessage = null;
         let activeAction = null;
 
-        // Variabel Voice Note
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
@@ -410,7 +437,6 @@
             return `<div class="${cls}">${initial}</div>`;
         }
 
-        // === SUARA NOTIFIKASI (WEB AUDIO API) ===
         function playNotifSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -631,6 +657,27 @@
             }
         }
 
+        // === UI KHUSUS VOICE NOTE ===
+        function createVoiceNoteHTML(url) {
+            // Bikin waveform palsu (random bar)
+            let barsHTML = '';
+            for(let i=0; i<25; i++) {
+                const height = Math.floor(Math.random() * 12) + 4;
+                barsHTML += `<div class="bar" style="height:${height}px"></div>`;
+            }
+            
+            return `
+                <div class="vn-container">
+                    <div class="vn-play-btn">${PLAY_SVG}</div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                        <div class="vn-waveform">${barsHTML}</div>
+                        <div class="vn-duration">0:00</div>
+                    </div>
+                </div>
+                <audio class="vn-hidden-audio" src="${url}" preload="metadata"></audio>
+            `;
+        }
+
         function appendMessage(m) {
             if (document.querySelector(`.msg[data-id="${m.id}"]`)) return;
 
@@ -645,14 +692,8 @@
                     div.innerHTML += `<div style="margin-top: 5px;">${m.content}</div>`;
                 }
             } else if (m.file_url && m.file_type === 'audio') {
-                // Render Pemutar Audio
-                div.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                        <span style="font-size: 12px;">Voice Note</span>
-                    </div>
-                    <audio controls src="${m.file_url}" style="width: 220px; margin-top: 6px;"></audio>
-                `;
+                div.innerHTML = createVoiceNoteHTML(m.file_url);
+                setupAudioPlayer(div);
             } else {
                 div.textContent = m.content;
             }
@@ -678,6 +719,54 @@
 
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
+        }
+
+        // Logic buat play audio & animasi waveform
+        function setupAudioPlayer(container) {
+            const btn = container.querySelector('.vn-play-btn');
+            const audio = container.querySelector('.vn-hidden-audio');
+            const durationText = container.querySelector('.vn-duration');
+            const bars = container.querySelectorAll('.vn-waveform .bar');
+            
+            // Set durasi asli
+            audio.addEventListener('loadedmetadata', () => {
+                const mins = Math.floor(audio.duration / 60);
+                const secs = Math.floor(audio.duration % 60);
+                durationText.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            });
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Biar gak kena klik kanan
+                
+                // Kalo ada audio lain yang lagi play, matiin
+                document.querySelectorAll('.vn-hidden-audio').forEach(a => {
+                    if (a !== audio) { a.pause(); a.currentTime = 0; }
+                    const otherBtn = a.closest('.vn-container')?.querySelector('.vn-play-btn');
+                    if (otherBtn) otherBtn.innerHTML = PLAY_SVG;
+                });
+
+                if (audio.paused) {
+                    audio.play();
+                    btn.innerHTML = PAUSE_SVG;
+                } else {
+                    audio.pause();
+                    btn.innerHTML = PLAY_SVG;
+                }
+            });
+
+            audio.addEventListener('timeupdate', () => {
+                const progress = (audio.currentTime / audio.duration);
+                // Warna baris waveform
+                const activeBars = Math.floor(progress * bars.length);
+                bars.forEach((bar, i) => {
+                    bar.style.opacity = i <= activeBars ? '1' : '0.3';
+                });
+            });
+
+            audio.addEventListener('ended', () => {
+                btn.innerHTML = PLAY_SVG;
+                bars.forEach(bar => bar.style.opacity = '0.3');
+            });
         }
 
         const ctxMenu = document.getElementById('ctxMenu');
@@ -750,7 +839,6 @@
             activeAction = null;
         });
 
-        // Upload Gambar
         document.getElementById('attachBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
         });
@@ -782,14 +870,12 @@
             e.target.value = ''; 
         });
 
-        // === REKAM VOICE NOTE ===
         const recordBtn = document.getElementById('recordBtn');
         
         recordBtn.addEventListener('click', async () => {
             if (!currentChatUser) return;
 
             if (!isRecording) {
-                // Mulai rekam
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream);
@@ -803,12 +889,10 @@
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         const fileName = `${currentUser.id}/${Date.now()}.webm`;
                         
-                        // Visual: Kembali normal
                         recordBtn.classList.remove('recording');
                         isRecording = false;
                         recordBtn.title = "Rekam Suara";
 
-                        // Upload ke Supabase
                         const { error: upErr } = await sb.storage.from('chat_uploads').upload(fileName, audioBlob);
                         if (upErr) {
                             alert('Gagal upload VN: ' + upErr.message);
@@ -817,7 +901,6 @@
 
                         const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
                         
-                        // Kirim ke tabel messages
                         await sb.from('messages').insert({
                             sender_id: currentUser.id,
                             receiver_id: currentChatUser.id,
@@ -832,7 +915,6 @@
                     recordBtn.classList.add('recording');
                     recordBtn.title = "Merekam... Klik lagi buat kirim";
 
-                    // Auto stop setelah 60 detik
                     recordingTimeout = setTimeout(() => {
                         if (isRecording) mediaRecorder.stop();
                     }, 60000);
@@ -842,11 +924,9 @@
                     console.error(err);
                 }
             } else {
-                // Stop rekam
                 clearTimeout(recordingTimeout);
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
-                    // Matiin stream biar lampu mikrofon mati
                     mediaRecorder.stream.getTracks().forEach(track => track.stop());
                 }
             }

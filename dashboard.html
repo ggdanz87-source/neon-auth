@@ -10,6 +10,7 @@
         :root {
             --bg: #050508; --card: rgba(10, 10, 15, 0.8); --border: rgba(0, 150, 255, 0.2);
             --text: #e0e0e0; --text-dim: #7a7a85; --neon: #00d4ff; --neon-dark: #0088cc;
+            --red: #e53935; --blue: #1e88e5;
         }
         body {
             font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
@@ -26,10 +27,9 @@
             background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; overflow: hidden;
         }
 
-        /* SIDEBAR */
         .sidebar { width: 340px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: rgba(0,0,0,0.3); }
         .sidebar-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
         .avatar {
             width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-dark), var(--neon));
             display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000;
@@ -55,15 +55,23 @@
             display: flex; align-items: center; gap: 12px;
         }
         .user-item:hover, .user-item.active { background: rgba(0, 212, 255, 0.1); border-left: 3px solid var(--neon); }
-        .user-name { font-weight: 600; color: #fff; font-size: 14px; }
+        .user-name { font-weight: 600; color: #fff; font-size: 14px; display: flex; align-items: center; }
         .user-phone { font-size: 11px; color: var(--text-dim); }
 
-        /* CHAT AREA */
+        .badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 16px; height: 16px; border-radius: 50%;
+            font-size: 10px; color: #fff; font-weight: bold;
+            margin-left: 4px; flex-shrink: 0;
+        }
+        .badge-red  { background: var(--red); box-shadow: 0 0 6px rgba(229,57,53,0.6); }
+        .badge-blue { background: var(--blue); box-shadow: 0 0 6px rgba(30,136,229,0.6); }
+
         .chat-area { flex: 1; display: flex; flex-direction: column; }
         .empty-chat { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-dim); }
         
         .chat-header {
-            padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 15px; display: none;
+            padding: 15px 20px; border-bottom: 1px solid var(--border); display: none; align-items: center; gap: 15px;
         }
         .chat-header.active { display: flex; }
         .chat-header .user-name { font-size: 16px; }
@@ -97,13 +105,14 @@
             <div class="sidebar-header">
                 <div class="user-info">
                     <div class="avatar" id="myAvatar">?</div>
-                    <div>
+                    <div style="min-width:0;">
                         <div class="user-name" id="myName">Loading...</div>
                         <div class="my-id" id="myPhone">-</div>
                     </div>
                 </div>
                 <div style="display:flex; align-items:center;">
                     <a href="profile.html" class="btn-edit">Edit</a>
+                    <a href="owner.html" class="btn-edit" id="ownerBtn" style="display:none; color:var(--red); border-color:var(--red);">Owner</a>
                     <button class="logout-btn" id="logoutBtn">Out</button>
                 </div>
             </div>
@@ -150,6 +159,12 @@
         let messageSubscription = null;
         let allUsers = [];
 
+        function badgeHTML(badge) {
+            if (badge === 'red') return '<span class="badge badge-red" title="Owner">✓</span>';
+            if (badge === 'blue') return '<span class="badge badge-blue" title="Terverifikasi">✓</span>';
+            return '';
+        }
+
         async function checkSession() {
             const { data: { session } } = await sb.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
@@ -159,10 +174,14 @@
             const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
             currentProfile = profile;
             
-            document.getElementById('myName').textContent = profile.full_name || profile.username;
+            const myNameEl = document.getElementById('myName');
+            myNameEl.innerHTML = (profile.full_name || profile.username || 'User') + badgeHTML(profile.badge);
             document.getElementById('myPhone').textContent = profile.phone_number || 'Membuat ID...';
+
+            if (profile.badge === 'red') {
+                document.getElementById('ownerBtn').style.display = 'inline-block';
+            }
             
-            // Set Avatar Sidebar
             const myAvatar = document.getElementById('myAvatar');
             if (profile.avatar_url) {
                 myAvatar.style.backgroundImage = `url('${profile.avatar_url}')`;
@@ -188,15 +207,14 @@
             }
 
             list.innerHTML = users.map(u => {
-                // Cek avatar url
                 const avatarStyle = u.avatar_url ? `background-image:url('${u.avatar_url}'); color: transparent;` : '';
                 const avatarText = u.avatar_url ? '' : (u.full_name || 'U').charAt(0).toUpperCase();
-                
+
                 return `
-                <div class="user-item" data-id="${u.id}" data-name="${u.full_name || u.username}" data-phone="${u.phone_number || '-'}" data-avatar="${u.avatar_url || ''}">
+                <div class="user-item" data-id="${u.id}" data-name="${u.full_name || u.username}" data-phone="${u.phone_number || '-'}" data-avatar="${u.avatar_url || ''}" data-badge="${u.badge || 'none'}">
                     <div class="avatar" style="${avatarStyle}">${avatarText}</div>
-                    <div>
-                        <div class="user-name">${u.full_name || u.username}</div>
+                    <div style="min-width:0;">
+                        <div class="user-name">${u.full_name || u.username}${badgeHTML(u.badge)}</div>
                         <div class="user-phone">${u.phone_number || '-'}</div>
                     </div>
                 </div>
@@ -207,7 +225,7 @@
                 item.addEventListener('click', () => {
                     document.querySelectorAll('.user-item').forEach(i => i.classList.remove('active'));
                     item.classList.add('active');
-                    openChat(item.dataset.id, item.dataset.name, item.dataset.phone, item.dataset.avatar);
+                    openChat(item.dataset.id, item.dataset.name, item.dataset.phone, item.dataset.avatar, item.dataset.badge);
                 });
             });
         }
@@ -222,17 +240,16 @@
             renderUserList(filtered);
         });
 
-        async function openChat(userId, name, phone, avatarUrl) {
+        async function openChat(userId, name, phone, avatarUrl, badge) {
             currentChatUser = { id: userId, name: name, phone: phone, avatar: avatarUrl };
             
             document.getElementById('emptyChat').style.display = 'none';
             document.getElementById('chatHeader').classList.add('active');
             document.getElementById('chatInputArea').classList.add('active');
             
-            document.getElementById('chatName').textContent = name;
+            document.getElementById('chatName').innerHTML = name + badgeHTML(badge);
             document.getElementById('chatPhone').textContent = phone;
             
-            // Set Avatar Chat Header
             const chatAvatar = document.getElementById('chatAvatar');
             if (avatarUrl) {
                 chatAvatar.style.backgroundImage = `url('${avatarUrl}')`;

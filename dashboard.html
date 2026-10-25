@@ -143,6 +143,7 @@
         .msg:active { opacity: 0.7; }
         .msg.mine { align-self: flex-end; background: var(--accent); color: #04121a; font-weight: 500; border-bottom-right-radius: 4px; }
         .msg.theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+        .msg.deleted { font-style: italic; color: var(--text-mute); background: transparent !important; border: 1px dashed var(--line-hi) !important; }
 
         .composer {
             padding: 14px 18px; border-top: 1px solid var(--line);
@@ -165,38 +166,23 @@
         .send-btn:hover { background: #6ad5f5; }
         .send-btn:active { transform: scale(0.97); }
 
-        /* === KUSTOM MENU KLIK KANAN / TEKAN LAMA === */
         .ctx-menu {
-            position: fixed;
-            z-index: 99999;
-            background: var(--surface);
-            border: 1px solid var(--line-hi);
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            padding: 6px;
-            display: none;
-            min-width: 180px;
-            animation: popIn 0.1s ease-out;
+            position: fixed; z-index: 99999; background: var(--surface);
+            border: 1px solid var(--line-hi); border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 6px;
+            display: none; min-width: 180px; animation: popIn 0.1s ease-out;
         }
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .ctx-menu.show { display: block; }
         .ctx-item {
-            padding: 9px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 13px;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: background 0.15s;
+            padding: 9px 12px; border-radius: 5px; cursor: pointer; font-size: 13px;
+            color: var(--text); display: flex; align-items: center; gap: 8px; transition: background 0.15s;
         }
         .ctx-item:hover { background: var(--surface-2); }
         .ctx-item.danger { color: var(--red); }
         .ctx-item.danger:hover { background: rgba(255, 71, 87, 0.1); }
         .ctx-item svg { width: 14px; height: 14px; }
 
-        /* === MODAL KONFIRMASI TENGAH LAYAR === */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 100000;
             background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
@@ -207,8 +193,7 @@
         .modal-box {
             background: var(--surface); border: 1px solid var(--line-hi);
             border-radius: 12px; padding: 24px; max-width: 340px; width: 90%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
-            animation: slideUp 0.2s ease;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9); animation: slideUp 0.2s ease;
         }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .modal-title { font-weight: 600; font-size: 16px; margin-bottom: 8px; color: var(--text); }
@@ -295,12 +280,10 @@
 
     <!-- KONTEXT MENU -->
     <div class="ctx-menu" id="ctxMenu">
-        <!-- Hapus untuk semua (cuma muncul kalo pesan sendiri) -->
         <div class="ctx-item danger" id="ctxDeleteAll" style="display:none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             Hapus untuk semua
         </div>
-        <!-- Hapus untuk saya (selalu muncul) -->
         <div class="ctx-item danger" id="ctxDeleteMe">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
             Hapus untuk saya
@@ -328,7 +311,6 @@
 
         const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
-        // === KAMUS TOXIC ===
         const TOXIC_WORDS = [
             'anjing', 'anjg', 'anjir', 'anjay', 'asw', 'asu', 'bangsat', 'bgst',
             'bajingan', 'brengsek', 'setan', 'iblis', 'keparat', 'bedebah',
@@ -532,7 +514,7 @@
                     if ((m.sender_id === currentUser.id && m.receiver_id === id) ||
                         (m.sender_id === id && m.receiver_id === currentUser.id)) {
                         
-                        // LOGIKA FILTER "HAPUS UNTUK SAYA"
+                        // Filter logic kalo di-refresh
                         if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
                         if (m.sender_id === id && m.deleted_by_receiver) return;
                         
@@ -541,11 +523,12 @@
                 })
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
                     const m = payload.new;
+                    const el = document.querySelector(`.msg[data-id="${m.id}"]`);
                     
-                    // Kalo ini pesan dari lawan, dan dia "Hapus untuk semua", buang dari layar kita
-                    if (m.id === activeMessage?.id && m.content === '[Pesan telah dihapus]' && m.sender_id !== currentUser.id) {
-                        const el = document.querySelector(`.msg[data-id="${m.id}"]`);
-                        if (el) el.remove();
+                    // Kalo ada update (dihapus untuk semua), ubah jadi teks "[Pesan telah dihapus]"
+                    if (m.content === '[Pesan telah dihapus]' && el) {
+                        el.className = `msg ${m.sender_id === currentUser.id ? 'mine' : 'theirs'} deleted`;
+                        el.textContent = '[Pesan telah dihapus]';
                     }
                 })
                 .subscribe();
@@ -562,7 +545,7 @@
             
             if (data) {
                 data.forEach(m => {
-                    // LOGIKA FILTER "HAPUS UNTUK SAYA" (Biar gak muncul pas refresh)
+                    // Filter hapus untuk saya
                     if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
                     if (m.sender_id === otherId && m.deleted_by_receiver) return;
 
@@ -574,16 +557,22 @@
         function appendMessage(m) {
             if (document.querySelector(`.msg[data-id="${m.id}"]`)) return;
 
-            // Kalo pesannya udah dihapus, gak usah munculin
-            if (m.content === '[Pesan telah dihapus]') return;
-
             const box = document.getElementById('messages');
             const mine = m.sender_id === currentUser.id;
             const div = document.createElement('div');
             div.className = `msg ${mine ? 'mine' : 'theirs'}`;
-            div.dataset.id = m.id;
-            div.textContent = m.content;
+            
+            // Kalo pesannya udah dihapus (misal baru refresh), tampilin teks hapus
+            if (m.content === '[Pesan telah dihapus]') {
+                div.classList.add('deleted');
+                div.textContent = '[Pesan telah dihapus]';
+            } else {
+                div.textContent = m.content;
+            }
 
+            div.dataset.id = m.id;
+
+            // Event Listener
             div.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -605,7 +594,6 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        // === KONTEXT MENU LOGIC ===
         const ctxMenu = document.getElementById('ctxMenu');
         
         function showContextMenu(x, y, msgData) {
@@ -632,7 +620,6 @@
             if (!e.target.closest('.msg')) e.preventDefault(); 
         });
 
-        // === MODAL KONFIRMASI ===
         const confirmModal = document.getElementById('confirmModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalDesc = document.getElementById('modalDesc');
@@ -669,16 +656,20 @@
 
             if (activeAction === 'delete_all') {
                 if (!isMine) return;
-                // BENERAN HAPUS DARI DATABASE
-                await sb.from('messages').delete().eq('id', m.id);
-                if (el) el.remove();
+                // GANTI TEKS JADI [Pesan telah dihapus] (Gak bener-bener hapus dari DB biar lawan bisa liat dihapus)
+                await sb.from('messages').update({ content: '[Pesan telah dihapus]' }).eq('id', m.id);
+                
+                if (el) {
+                    el.className = `msg ${isMine ? 'mine' : 'theirs'} deleted`;
+                    el.textContent = '[Pesan telah dihapus]';
+                }
             } 
             else if (activeAction === 'delete_me') {
-                // Pura-pura hapus, ganti isi teks di DB
+                // GANTI TEKS JADI KOSONG DI DATABASE BIAR PAS REFRESH HILANG
                 const updateData = isMine ? { deleted_by_sender: true } : { deleted_by_receiver: true };
-                await sb.from('messages').update(updateData).eq('id', m.id);
+                // Hapus permanen datanya dari DB biar refresh gak muncul
+                await sb.from('messages').delete().eq('id', m.id); 
                 
-                // Hapus dari layar lo aja
                 if (el) el.remove();
             }
 
@@ -686,7 +677,6 @@
             activeAction = null;
         });
 
-        // === KIRIM PESAN ===
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const content = input.value.trim();

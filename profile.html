@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profil — Zerozx Neon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #050508; --card: rgba(10, 10, 15, 0.85); --border: rgba(0, 150, 255, 0.2);
+            --text: #e0e0e0; --text-dim: #7a7a85; --neon: #00d4ff;
+        }
+        body {
+            font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            background: radial-gradient(circle at top right, #001f3f 0%, #050508 50%);
+        }
+        .card {
+            background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border);
+            border-radius: 20px; padding: 40px; width: 100%; max-width: 450px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.1);
+        }
+        h1 { font-family: 'Orbitron', sans-serif; color: var(--neon); text-align: center; margin-bottom: 30px; font-size: 24px;}
+        
+        .avatar-section { text-align: center; margin-bottom: 25px; }
+        .avatar-preview {
+            width: 110px; height: 110px; border-radius: 50%; background: #111;
+            margin: 0 auto; border: 3px solid var(--neon); display: flex;
+            align-items: center; justify-content: center; font-size: 40px; font-weight: bold;
+            overflow: hidden; background-size: cover; background-position: center;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+        }
+        .file-input { display: none; }
+        .btn-upload {
+            display: inline-block; margin-top: 15px; padding: 8px 20px; background: rgba(0,212,255,0.1);
+            border: 1px solid var(--neon); color: var(--neon); border-radius: 8px;
+            cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s;
+        }
+        .btn-upload:hover { background: var(--neon); color: #000; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 12px; color: var(--neon); margin-bottom: 8px; font-weight: bold; }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 14px; background: rgba(0,0,0,0.5); border: 1px solid var(--border);
+            border-radius: 10px; color: #fff; font-family: inherit; outline: none; resize: vertical;
+        }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--neon); box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); }
+        
+        button.btn-save {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #0088cc, #00d4ff);
+            border: none; border-radius: 10px; color: #000; font-weight: 800; font-size: 14px; cursor: pointer;
+            margin-top: 10px; transition: 0.3s;
+        }
+        button.btn-save:hover { box-shadow: 0 0 25px var(--neon); transform: translateY(-2px); }
+        
+        .back-link { display: block; text-align: center; margin-top: 20px; color: var(--text-dim); text-decoration: none; font-size: 13px; }
+        .back-link:hover { color: var(--neon); }
+        .msg { text-align: center; padding: 12px; border-radius: 8px; margin-top: 15px; display: none; font-size: 13px; }
+        .msg.error { display: block; background: rgba(255,68,68,0.1); color: #ff4444; border: 1px solid #ff4444; }
+        .msg.success { display: block; background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid #00ff88; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>EDIT PROFIL</h1>
+        
+        <div class="avatar-section">
+            <div class="avatar-preview" id="avatarPreview">?</div>
+            <input type="file" id="avatarFile" class="file-input" accept="image/*">
+            <label for="avatarFile" class="btn-upload">📷 Ganti Foto</label>
+        </div>
+
+        <form id="profileForm">
+            <div class="form-group">
+                <label>Nama Lengkap</label>
+                <input type="text" id="fullName" required>
+            </div>
+            <div class="form-group">
+                <label>Bio (Opsional)</label>
+                <textarea id="bio" rows="3" placeholder="Ceritain tentang diri lo..."></textarea>
+            </div>
+            <div class="msg" id="msgBox"></div>
+            <button type="submit" class="btn-save">💾 SIMPAN PERUBAHAN</button>
+        </form>
+        
+        <a href="dashboard.html" class="back-link">← Balik ke Chat</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://hlhlpznffrnuvxgcuwiu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable__Xm9KHWul4yOcvbH9cPAGg_h_A4s0_O';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let currentProfile = null;
+        let selectedFile = null;
+
+        async function loadProfile() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) { window.location.href = 'index.html'; return; }
+            currentUser = session.user;
+
+            const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+            if (data) {
+                currentProfile = data;
+                document.getElementById('fullName').value = data.full_name || '';
+                document.getElementById('bio').value = data.bio || '';
+                
+                const avatarEl = document.getElementById('avatarPreview');
+                if (data.avatar_url) {
+                    avatarEl.style.backgroundImage = `url('${data.avatar_url}')`;
+                    avatarEl.textContent = '';
+                } else {
+                    avatarEl.textContent = (data.full_name || 'U').charAt(0).toUpperCase();
+                }
+            }
+        }
+
+        document.getElementById('avatarFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const avatarEl = document.getElementById('avatarPreview');
+                    avatarEl.style.backgroundImage = `url('${ev.target.result}')`;
+                    avatarEl.textContent = '';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('.btn-save');
+            const msg = document.getElementById('msgBox');
+            btn.textContent = 'Menyimpan...';
+            btn.disabled = true;
+            msg.className = 'msg';
+
+            const newName = document.getElementById('fullName').value;
+            const newBio = document.getElementById('bio').value;
+            let newAvatarUrl = currentProfile.avatar_url;
+
+            // 1. Upload Foto Kalo Ada File Baru
+            if (selectedFile) {
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${currentUser.id}/${Date.now()}.${fileExt}`;
+                
+                const { error: uploadErr } = await sb.storage.from('avatars').upload(fileName, selectedFile);
+                
+                if (uploadErr) {
+                    msg.className = 'msg error';
+                    msg.textContent = 'Gagal upload foto: ' + uploadErr.message;
+                    btn.textContent = '💾 SIMPAN PERUBAHAN';
+                    btn.disabled = false;
+                    return;
+                }
+                
+                const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName);
+                newAvatarUrl = urlData.publicUrl;
+            }
+
+            // 2. Update Data Profil
+            const { error: updateErr } = await sb.from('profiles').update({
+                full_name: newName,
+                bio: newBio,
+                avatar_url: newAvatarUrl
+            }).eq('id', currentUser.id);
+
+            if (updateErr) {
+                msg.className = 'msg error';
+                msg.textContent = 'Gagal simpan: ' + updateErr.message;
+                btn.textContent = '💾 SIMPAN PERUBAHAN';
+                btn.disabled = false;
+            } else {
+                msg.className = 'msg success';
+                msg.textContent = '✅ Profil berhasil diupdate!';
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+            }
+        });
+
+        loadProfile();
+    </script>
+</body>
+</html>

@@ -40,16 +40,32 @@
         .btn {
             padding: 14px 24px; border: none; border-radius: 10px;
             font-family: inherit; font-weight: 800; cursor: pointer;
-            transition: 0.3s; font-size: 13px;
+            transition: 0.3s; font-size: 13px; white-space: nowrap;
         }
         .btn-blue { background: linear-gradient(135deg, #1565c0, var(--blue)); color: #fff; }
         .btn-blue:hover { box-shadow: 0 0 20px var(--blue); }
         .btn-red { background: transparent; border: 1px solid var(--red); color: var(--red); }
         .btn-red:hover { background: var(--red); color: #000; }
+        .btn-cabut {
+            padding: 8px 14px; font-size: 11px; background: transparent;
+            border: 1px solid var(--red); color: var(--red); border-radius: 8px;
+            cursor: pointer; font-weight: 800; font-family: inherit; transition: 0.2s;
+        }
+        .btn-cabut:hover { background: var(--red); color: #fff; box-shadow: 0 0 15px var(--red); }
 
         .msg { padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; font-size: 13px; text-align: center; }
         .msg.ok { display: block; background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid #00ff88; }
         .msg.err { display: block; background: rgba(255,68,68,0.1); color: #ff4444; border: 1px solid #ff4444; }
+
+        .section-title {
+            color: var(--neon); font-size: 14px; margin: 30px 0 15px;
+            padding-bottom: 8px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-title .count {
+            background: var(--blue); color: #fff; font-size: 11px;
+            padding: 2px 8px; border-radius: 10px; font-weight: bold;
+        }
 
         .user-item {
             display: flex; align-items: center; gap: 12px;
@@ -75,6 +91,8 @@
         .badge-red { background: var(--red); }
         .badge-blue { background: var(--blue); }
 
+        .empty-text { text-align: center; padding: 20px; color: var(--text-dim); font-size: 12px; }
+
         .back-link { display: block; text-align: center; margin-top: 25px; color: var(--text-dim); text-decoration: none; font-size: 13px; }
         .back-link:hover { color: var(--neon); }
     </style>
@@ -86,19 +104,26 @@
 
         <div class="msg" id="msgBox"></div>
 
+        <!-- SECTION 1: KASIH CENTANG BIRU -->
+        <div class="section-title">✓ Kasih Centang Biru</div>
         <div class="input-row">
             <input type="text" id="targetPhone" placeholder="Nomor target (08xxxx...)" />
-            <button class="btn btn-blue" onclick="giveBlue()">✓ Kasih Biru</button>
+            <button class="btn btn-blue" onclick="giveBlue()">Kasih Biru</button>
         </div>
 
-        <div class="input-row">
-            <input type="text" id="revokePhone" placeholder="Nomor target (buat cabut)" />
-            <button class="btn btn-red" onclick="revokeBlue()">✗ Cabut</button>
+        <!-- SECTION 2: LIST USER YANG UDAH PUNYA CENTANG BIRU -->
+        <div class="section-title">
+            💙 User Terverifikasi
+            <span class="count" id="blueCount">0</span>
+        </div>
+        <div id="blueList">
+            <div class="empty-text">Memuat...</div>
         </div>
 
-        <h3 style="margin: 30px 0 15px; color: var(--neon); font-size: 14px;">Daftar User</h3>
-        <div id="userList" style="max-height: 400px; overflow-y: auto;">
-            <div style="text-align:center; padding:20px; color:var(--text-dim); font-size:12px;">Memuat...</div>
+        <!-- SECTION 3: SEMUA USER (opsional, biar tau nomornya) -->
+        <div class="section-title">👥 Semua User</div>
+        <div id="allList">
+            <div class="empty-text">Memuat...</div>
         </div>
 
         <a href="dashboard.html" class="back-link">← Balik ke Chat</a>
@@ -109,6 +134,8 @@
         const SUPABASE_URL = 'https://hlhlpznffrnuvxgcuwiu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable__Xm9KHWul4yOcvbH9cPAGg_h_A4s0_O';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let allUsersCache = [];
 
         function showMsg(text, type) {
             const el = document.getElementById('msgBox');
@@ -121,6 +148,13 @@
             if (badge === 'red') return '<span class="badge badge-red">✓</span>';
             if (badge === 'blue') return '<span class="badge badge-blue">✓</span>';
             return '';
+        }
+
+        function renderAvatar(u) {
+            if (u.avatar_url) {
+                return `<div class="avatar" style="background-image:url('${u.avatar_url}'); color: transparent;"></div>`;
+            }
+            return `<div class="avatar">${(u.full_name || 'U').charAt(0).toUpperCase()}</div>`;
         }
 
         async function init() {
@@ -141,30 +175,50 @@
 
         async function loadUsers() {
             const { data, error } = await sb.rpc('list_users_for_owner');
-            const list = document.getElementById('userList');
-
+            
             if (error) {
-                list.innerHTML = `<div style="color:#ff4444;font-size:12px;">${error.message}</div>`;
-                return;
-            }
-            if (!data || data.length === 0) {
-                list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px;">Belum ada user.</div>';
+                document.getElementById('blueList').innerHTML = `<div class="empty-text" style="color:#ff4444;">${error.message}</div>`;
+                document.getElementById('allList').innerHTML = `<div class="empty-text" style="color:#ff4444;">${error.message}</div>`;
                 return;
             }
 
-            list.innerHTML = data.map(u => {
-                const avatarStyle = u.avatar_url ? `background-image:url('${u.avatar_url}'); color: transparent;` : '';
-                const avatarText = u.avatar_url ? '' : (u.full_name || 'U').charAt(0).toUpperCase();
+            allUsersCache = data || [];
 
-                return `
-                <div class="user-item">
-                    <div class="avatar" style="${avatarStyle}">${avatarText}</div>
-                    <div class="info">
-                        <div class="name">${u.full_name || 'User'} ${badgeHTML(u.badge)}</div>
-                        <div class="phone">${u.phone_number || '-'}</div>
+            // Render list yang udah punya centang biru
+            const blueUsers = allUsersCache.filter(u => u.badge === 'blue');
+            document.getElementById('blueCount').textContent = blueUsers.length;
+
+            const blueList = document.getElementById('blueList');
+            if (blueUsers.length === 0) {
+                blueList.innerHTML = '<div class="empty-text">Belum ada user terverifikasi.</div>';
+            } else {
+                blueList.innerHTML = blueUsers.map(u => `
+                    <div class="user-item">
+                        ${renderAvatar(u)}
+                        <div class="info">
+                            <div class="name">${u.full_name || 'User'} ${badgeHTML(u.badge)}</div>
+                            <div class="phone">${u.phone_number || '-'}</div>
+                        </div>
+                        <button class="btn-cabut" onclick="cabutBlue('${u.phone_number}')">✗ Cabut</button>
                     </div>
-                </div>`;
-            }).join('');
+                `).join('');
+            }
+
+            // Render semua user
+            const allList = document.getElementById('allList');
+            if (allUsersCache.length === 0) {
+                allList.innerHTML = '<div class="empty-text">Belum ada user.</div>';
+            } else {
+                allList.innerHTML = allUsersCache.map(u => `
+                    <div class="user-item">
+                        ${renderAvatar(u)}
+                        <div class="info">
+                            <div class="name">${u.full_name || 'User'} ${badgeHTML(u.badge)}</div>
+                            <div class="phone">${u.phone_number || '-'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
 
         async function giveBlue() {
@@ -180,16 +234,14 @@
             loadUsers();
         }
 
-        async function revokeBlue() {
-            const phone = document.getElementById('revokePhone').value.trim();
-            if (!phone) return showMsg('Isi nomor target dulu', 'err');
+        async function cabutBlue(phone) {
+            if (!confirm(`Cabut centang biru dari ${phone}?`)) return;
 
             const { data, error } = await sb.rpc('revoke_blue_badge', { target_phone: phone });
             if (error) return showMsg(error.message, 'err');
             if (!data.ok) return showMsg(data.error, 'err');
 
             showMsg('✅ ' + data.message, 'ok');
-            document.getElementById('revokePhone').value = '';
             loadUsers();
         }
 

@@ -282,7 +282,6 @@
                 position: relative; overflow: hidden;
             }
             
-            /* Sidebar jadi full screen & nimpa chat */
             .sidebar {
                 width: 100%; border-right: none;
                 position: absolute; inset: 0; z-index: 10;
@@ -291,7 +290,6 @@
             body.show-chat .sidebar { transform: translateX(-100%); }
             body:not(.show-chat) .sidebar { transform: translateX(0); }
             
-            /* Chat area jadi full screen */
             .chat {
                 position: absolute; inset: 0; z-index: 20;
                 transform: translateX(100%);
@@ -299,21 +297,17 @@
             }
             body.show-chat .chat { transform: translateX(0); }
             
-            /* Tombol back muncul */
             .back-btn { display: block; }
             
-            /* Sesuaiin padding & font */
             .me { padding: 15px; }
             .messages { padding: 15px; }
             .msg { max-width: 85%; font-size: 14px; }
             .composer { padding: 10px; gap: 6px; }
             
-            /* Kirim jadi ikon aja biar gak makan tempat */
             .send-btn span { display: none; }
             .send-btn svg { display: block; }
             .send-btn { width: 40px; padding: 0; }
             
-            /* Action button jadi lebih kecil dikit */
             .action-btn { width: 36px; height: 36px; }
             .action-btn svg { width: 16px; height: 16px; }
             

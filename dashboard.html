@@ -374,8 +374,8 @@
         let messageSubscription = null;
         let allUsers = [];
         let isOwner = false;
-        let activeMessage = null; // Simpan objek pesan yang lagi di-klik
-        let activeAction = null; // 'delete_all' | 'delete_me'
+        let activeMessage = null;
+        let activeAction = null;
 
         function badgeHTML(badge) {
             if (badge === 'red')  return `<span class="badge red" title="Owner">${CHECK_SVG}</span>`;
@@ -529,22 +529,23 @@
             messageSubscription = sb.channel('messages-realtime')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
                     const m = payload.new;
-                    // Cegah pesan muncul kalo udah ditandain deleted di device ini
-                    if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
-                    if (m.sender_id === id && m.deleted_by_receiver) return;
-
                     if ((m.sender_id === currentUser.id && m.receiver_id === id) ||
                         (m.sender_id === id && m.receiver_id === currentUser.id)) {
+                        
+                        // LOGIKA FILTER "HAPUS UNTUK SAYA"
+                        if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
+                        if (m.sender_id === id && m.deleted_by_receiver) return;
+                        
                         appendMessage(m);
                     }
                 })
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
                     const m = payload.new;
-                    const el = document.querySelector(`.msg[data-id="${m.id}"]`);
                     
-                    // Kalo dihapus untuk semua, buang dari layar
-                    if (m.deleted_by_sender && m.deleted_by_receiver && el) {
-                        el.remove();
+                    // Kalo ini pesan dari lawan, dan dia "Hapus untuk semua", buang dari layar kita
+                    if (m.id === activeMessage?.id && m.content === '[Pesan telah dihapus]' && m.sender_id !== currentUser.id) {
+                        const el = document.querySelector(`.msg[data-id="${m.id}"]`);
+                        if (el) el.remove();
                     }
                 })
                 .subscribe();
@@ -561,9 +562,10 @@
             
             if (data) {
                 data.forEach(m => {
-                    // Cek apakah pesan udah dihapus di device kita
+                    // LOGIKA FILTER "HAPUS UNTUK SAYA" (Biar gak muncul pas refresh)
                     if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
                     if (m.sender_id === otherId && m.deleted_by_receiver) return;
+
                     appendMessage(m);
                 });
             }
@@ -572,6 +574,9 @@
         function appendMessage(m) {
             if (document.querySelector(`.msg[data-id="${m.id}"]`)) return;
 
+            // Kalo pesannya udah dihapus, gak usah munculin
+            if (m.content === '[Pesan telah dihapus]') return;
+
             const box = document.getElementById('messages');
             const mine = m.sender_id === currentUser.id;
             const div = document.createElement('div');
@@ -579,17 +584,12 @@
             div.dataset.id = m.id;
             div.textContent = m.content;
 
-            // Simpan data full message di dataset
-            div.dataset.mine = mine ? '1' : '0';
-
-            // Klik Kanan (PC)
             div.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 showContextMenu(e.clientX, e.clientY, m);
             });
 
-            // Tekan Lama (HP)
             let pressTimer;
             div.addEventListener('touchstart', (e) => {
                 pressTimer = setTimeout(() => {
@@ -612,7 +612,6 @@
             activeMessage = msgData;
             const isMine = msgData.sender_id === currentUser.id;
 
-            // Tampilkan "Hapus untuk semua" cuma kalo punya sendiri
             const elAll = document.getElementById('ctxDeleteAll');
             elAll.style.display = isMine ? 'flex' : 'none';
             
@@ -625,12 +624,10 @@
             ctxMenu.classList.add('show');
         }
 
-        // Sembunyiin menu kalo klik di luar
         document.addEventListener('click', (e) => {
             if (!ctxMenu.contains(e.target)) ctxMenu.classList.remove('show');
         });
 
-        // Cegah menu browser di semua tempat
         document.addEventListener('contextmenu', (e) => {
             if (!e.target.closest('.msg')) e.preventDefault(); 
         });
@@ -652,19 +649,16 @@
             activeAction = null;
         });
 
-        // Aksi Klik Hapus untuk Semua
         document.getElementById('ctxDeleteAll').addEventListener('click', () => {
             ctxMenu.classList.remove('show');
             openModal('Hapus untuk semua?', 'Pesan ini akan hilang dari layar kamu dan lawan bicara.', 'delete_all');
         });
 
-        // Aksi Klik Hapus untuk Saya
         document.getElementById('ctxDeleteMe').addEventListener('click', () => {
             ctxMenu.classList.remove('show');
             openModal('Hapus pesan?', 'Pesan ini hanya akan hilang dari layar kamu sendiri.', 'delete_me');
         });
 
-        // PROSES HAPUS PAS DIKLIK "HAPUS" DI MODAL
         document.getElementById('modalConfirm').addEventListener('click', async () => {
             if (!activeMessage || !activeAction) return;
             confirmModal.classList.remove('show');
@@ -675,20 +669,16 @@
 
             if (activeAction === 'delete_all') {
                 if (!isMine) return;
-                // Hapus total dari database
+                // BENERAN HAPUS DARI DATABASE
                 await sb.from('messages').delete().eq('id', m.id);
                 if (el) el.remove();
             } 
             else if (activeAction === 'delete_me') {
-                // Tandain aja kalo si A / B udah hapus
+                // Pura-pura hapus, ganti isi teks di DB
                 const updateData = isMine ? { deleted_by_sender: true } : { deleted_by_receiver: true };
                 await sb.from('messages').update(updateData).eq('id', m.id);
                 
-                // Buat "Hapus untuk semua" bener-bener hapus di DB kalo dua-duanya udah hapus
-                if (m.deleted_by_sender && m.deleted_by_receiver) {
-                    await sb.from('messages').delete().eq('id', m.id);
-                }
-                
+                // Hapus dari layar lo aja
                 if (el) el.remove();
             }
 

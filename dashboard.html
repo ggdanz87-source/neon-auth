@@ -16,7 +16,6 @@
             --accent: #4cc9f0; --accent-dim: #1d6d85;
             --red: #ff4757; --blue: #3a86ff; --success: #2ec4b6;
         }
-        /* Light Mode Variables */
         body.light-mode {
             --bg: #f4f6f9; --surface: #ffffff; --surface-2: #f0f2f5;
             --line: #e1e4ea; --line-hi: #cfd4dc;
@@ -255,7 +254,7 @@
         .ctx-item.danger:hover { background: rgba(255, 71, 87, 0.1); }
         .ctx-item svg { width: 14px; height: 14px; }
 
-        /* MODAL */
+        /* MODAL (TENGAH LAYAR) */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 100000;
             background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
@@ -340,7 +339,6 @@
                     <div class="chat-head-name" id="chatName">—</div>
                     <div class="chat-head-phone" id="chatPhone">—</div>
                 </div>
-                <!-- Tombol Clear Chat -->
                 <button class="icon-btn danger" id="clearChatBtn" title="Hapus Semua Chat">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                 </button>
@@ -349,7 +347,6 @@
             <div class="messages" id="messages"></div>
 
             <div class="composer" id="composer">
-                <!-- Reply Bar -->
                 <div class="reply-bar" id="replyBar">
                     <div>
                         <div style="font-size: 10px; color: var(--accent); font-weight: bold;">Membalas pesan:</div>
@@ -393,13 +390,14 @@
         </div>
     </div>
 
+    <!-- MODAL KONFIRMASI UNIVERSAL -->
     <div class="modal-overlay" id="confirmModal">
         <div class="modal-box">
-            <div class="modal-title" id="modalTitle">Hapus Pesan?</div>
-            <div class="modal-desc" id="modalDesc">Pesan ini akan dihapus.</div>
+            <div class="modal-title" id="modalTitle">Konfirmasi</div>
+            <div class="modal-desc" id="modalDesc">Yakin?</div>
             <div class="modal-actions">
                 <button class="btn-cancel" id="modalCancel">Batal</button>
-                <button class="btn-confirm-del" id="modalConfirm">Hapus</button>
+                <button class="btn-confirm-del" id="modalConfirm">Ya</button>
             </div>
         </div>
     </div>
@@ -502,7 +500,6 @@
             } catch (e) { console.error("Audio error:", e); }
         }
 
-        // === THEME TOGGLE ===
         function initTheme() {
             const isLight = localStorage.getItem('theme') === 'light';
             if (isLight) document.body.classList.add('light-mode');
@@ -513,6 +510,44 @@
             });
         }
 
+        // === MODAL ENGINE (TENGAH LAYAR) ===
+        const confirmModal = document.getElementById('confirmModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDesc = document.getElementById('modalDesc');
+        const modalConfirmBtn = document.getElementById('modalConfirm');
+        let modalCallback = null;
+
+        function showModal(title, desc, confirmText, btnColor, callback) {
+            modalTitle.textContent = title;
+            modalDesc.textContent = desc;
+            modalConfirmBtn.textContent = confirmText;
+            
+            // Reset class
+            modalConfirmBtn.className = 'btn-confirm-del';
+            if (btnColor === 'primary') {
+                modalConfirmBtn.style.background = 'var(--accent)';
+                modalConfirmBtn.style.color = '#04121a';
+            } else if (btnColor === 'danger') {
+                modalConfirmBtn.style.background = 'var(--red)';
+                modalConfirmBtn.style.color = '#fff';
+            }
+            
+            modalCallback = callback;
+            confirmModal.classList.add('show');
+        }
+
+        document.getElementById('modalCancel').addEventListener('click', () => {
+            confirmModal.classList.remove('show');
+            modalCallback = null;
+        });
+
+        modalConfirmBtn.addEventListener('click', () => {
+            if (modalCallback) modalCallback();
+            confirmModal.classList.remove('show');
+            modalCallback = null;
+        });
+
+        // === INIT ===
         async function init() {
             initTheme();
 
@@ -672,10 +707,9 @@
                 ca.textContent = name.charAt(0).toUpperCase();
             }
 
-            cancelReply(); // Reset reply kalo pindah chat
+            cancelReply(); 
             await loadMessages(id);
 
-            // Tandain udah dibaca semua (Read Receipts)
             await sb.from('messages').update({ is_read: true }).eq('sender_id', id).eq('receiver_id', currentUser.id).eq('is_read', false);
 
             if (messageSubscription) messageSubscription.unsubscribe();
@@ -687,7 +721,6 @@
                         appendMessage(m);
                         if (m.sender_id === id) {
                             playNotifSound();
-                            // Kalo lagi buka chat, langsung tandain dibaca
                             sb.from('messages').update({ is_read: true }).eq('id', m.id);
                         }
                     }
@@ -700,7 +733,6 @@
                         el.style.display = 'none';
                     }
                     
-                    // Update centang biru secara realtime
                     if (m.is_read && el) {
                         const meta = el.querySelector('.msg-meta');
                         if (meta) meta.innerHTML = CHECK_SVG_2;
@@ -759,7 +791,6 @@
             const div = document.createElement('div');
             div.className = `msg ${mine ? 'mine' : 'theirs'}`;
             
-            // --- Render Reply Preview ---
             let replyHTML = '';
             if (m.reply_to_id && m.reply) {
                 const isReplyDeleted = m.reply.content === '[Pesan ini telah dihapus]';
@@ -772,7 +803,6 @@
                 `;
             }
 
-            // --- Render Body ---
             let bodyHTML = '';
             if (m.file_url && m.file_type === 'image') {
                 bodyHTML = `<img src="${m.file_url}" alt="Gambar">`;
@@ -782,7 +812,6 @@
                 bodyHTML = m.content;
             }
 
-            // --- Render Meta (Jam & Centang) ---
             const time = new Date(m.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             let metaHTML = `<span>${time}</span>`;
             if (mine) {
@@ -862,7 +891,6 @@
             });
         }
 
-        // === CONTEXT MENU & REPLY ===
         const ctxMenu = document.getElementById('ctxMenu');
         
         function showContextMenu(x, y, msgData) {
@@ -889,7 +917,6 @@
             if (!e.target.closest('.msg')) e.preventDefault(); 
         });
 
-        // Fitur Reply
         document.getElementById('ctxReply').addEventListener('click', () => {
             if (!activeMessage) return;
             ctxMenu.classList.remove('show');
@@ -907,72 +934,43 @@
 
         document.getElementById('cancelReply').addEventListener('click', cancelReply);
 
-        // Fitur Hapus
-        const confirmModal = document.getElementById('confirmModal');
-
-        function openModal(title, desc, action) {
-            document.getElementById('modalTitle').textContent = title;
-            document.getElementById('modalDesc').textContent = desc;
-            activeAction = action;
-            confirmModal.classList.add('show');
-        }
-
-        document.getElementById('modalCancel').addEventListener('click', () => {
-            confirmModal.classList.remove('show');
-            activeAction = null;
-        });
-
         document.getElementById('ctxDeleteAll').addEventListener('click', () => {
             ctxMenu.classList.remove('show');
-            openModal('Hapus untuk semua?', 'Pesan ini akan hilang dari layar kamu dan lawan bicara.', 'delete_all');
+            showModal('Hapus untuk semua?', 'Pesan ini akan hilang dari layar kamu dan lawan bicara.', 'Hapus', 'danger', async () => {
+                const m = activeMessage;
+                const el = document.querySelector(`.msg[data-id="${m.id}"]`);
+                await sb.from('messages').update({ content: '[Pesan ini telah dihapus]' }).eq('id', m.id);
+                if (el) el.style.display = 'none';
+            });
         });
 
         document.getElementById('ctxDeleteMe').addEventListener('click', () => {
             ctxMenu.classList.remove('show');
-            openModal('Hapus pesan?', 'Pesan ini hanya akan hilang dari layar kamu sendiri.', 'delete_me');
-        });
-
-        document.getElementById('modalConfirm').addEventListener('click', async () => {
-            if (!activeMessage || !activeAction) return;
-            confirmModal.classList.remove('show');
-
-            const m = activeMessage;
-            const el = document.querySelector(`.msg[data-id="${m.id}"]`);
-
-            if (activeAction === 'delete_all') {
-                await sb.from('messages').update({ content: '[Pesan ini telah dihapus]' }).eq('id', m.id);
-                if (el) el.style.display = 'none';
-            } 
-            else if (activeAction === 'delete_me') {
+            showModal('Hapus pesan?', 'Pesan ini hanya akan hilang dari layar kamu sendiri.', 'Hapus', 'danger', async () => {
+                const m = activeMessage;
+                const el = document.querySelector(`.msg[data-id="${m.id}"]`);
                 await sb.from('message_deletions').insert({ message_id: m.id, user_id: currentUser.id });
                 if (el) el.remove();
-            }
-
-            activeMessage = null;
-            activeAction = null;
+            });
         });
 
-        // === CLEAR CHAT ===
-        document.getElementById('clearChatBtn').addEventListener('click', async () => {
+        // === CLEAR CHAT (PAKE MODAL TENGAH) ===
+        document.getElementById('clearChatBtn').addEventListener('click', () => {
             if (!currentChatUser) return;
-            if (!confirm('Yakin mau hapus SEMUA chat di room ini? (Cuma ilang di layar lo)')) return;
-
-            // Ambil semua ID pesan di room ini
-            const { data: msgs } = await sb.from('messages')
-                .select('id')
-                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentChatUser.id}),and(sender_id.eq.${currentChatUser.id},receiver_id.eq.${currentUser.id})`);
-            
-            if (msgs && msgs.length > 0) {
-                // Masukin ke tabel message_deletions
-                const inserts = msgs.map(m => ({ message_id: m.id, user_id: currentUser.id }));
-                await sb.from('message_deletions').insert(inserts);
+            showModal('Hapus Semua Chat?', 'Seluruh riwayat chat di room ini akan dihapus dari layar kamu.', 'Hapus Semua', 'danger', async () => {
+                const { data: msgs } = await sb.from('messages')
+                    .select('id')
+                    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentChatUser.id}),and(sender_id.eq.${currentChatUser.id},receiver_id.eq.${currentUser.id})`);
                 
-                // Bersihin layar
-                document.getElementById('messages').innerHTML = '';
-            }
+                if (msgs && msgs.length > 0) {
+                    const inserts = msgs.map(m => ({ message_id: m.id, user_id: currentUser.id }));
+                    await sb.from('message_deletions').insert(inserts);
+                    document.getElementById('messages').innerHTML = '';
+                }
+            });
         });
 
-        // === UPLOAD GAMBAR & VN ===
+        // === UPLOAD GAMBAR ===
         document.getElementById('attachBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
         });
@@ -985,7 +983,10 @@
             const fileName = `${currentUser.id}/${Date.now()}.${ext}`;
             
             const { error: upErr } = await sb.storage.from('chat_uploads').upload(fileName, file);
-            if (upErr) return alert('Gagal upload gambar: ' + upErr.message);
+            if (upErr) {
+                showModal('Gagal Upload', upErr.message, 'Tutup', 'primary', null);
+                return;
+            }
             
             const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
             
@@ -1002,6 +1003,7 @@
             e.target.value = ''; 
         });
 
+        // === REKAM VN ===
         const recordBtn = document.getElementById('recordBtn');
         
         recordBtn.addEventListener('click', async () => {
@@ -1026,7 +1028,10 @@
                         recordBtn.title = "Rekam Suara";
 
                         const { error: upErr } = await sb.storage.from('chat_uploads').upload(fileName, audioBlob);
-                        if (upErr) return alert('Gagal upload VN: ' + upErr.message);
+                        if (upErr) {
+                            showModal('Gagal Upload VN', upErr.message, 'Tutup', 'primary', null);
+                            return;
+                        }
 
                         const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
                         
@@ -1052,7 +1057,7 @@
                     }, 60000);
 
                 } catch (err) {
-                    alert("Akses mikrofon ditolak! Pastikan lo ngasih izin.");
+                    showModal('Akses Ditolak', 'Pastikan lo ngasih izin mikrofon di browser.', 'Tutup', 'primary', null);
                 }
             } else {
                 clearTimeout(recordingTimeout);
@@ -1063,7 +1068,7 @@
             }
         });
 
-        // === KIRIM PESAN TEKS ===
+        // === KIRIM PESAN ===
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const content = input.value.trim();

@@ -2,13 +2,13 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon — Chat</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
             --bg: #08090c; --surface: #0f1116; --surface-2: #14171e;
             --line: #1e232d; --line-hi: #2a3140;
@@ -25,25 +25,10 @@
         body {
             font-family: 'Space Grotesk', system-ui, sans-serif;
             background: var(--bg); color: var(--text);
-            height: 100vh; overflow: hidden; -webkit-font-smoothing: antialiased;
+            height: 100vh; height: 100dvh; overflow: hidden; -webkit-font-smoothing: antialiased;
             user-select: none; transition: background 0.3s, color 0.3s;
         }
-        .bg {
-            position: fixed; inset: 0; z-index: 0;
-            background:
-                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(76, 201, 240, 0.12), transparent),
-                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(58, 134, 255, 0.06), transparent);
-            pointer-events: none;
-        }
-        body.light-mode .bg { opacity: 0.4; }
-        .bg::before {
-            content: ''; position: absolute; inset: 0;
-            background-image:
-                linear-gradient(rgba(76, 201, 240, 0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(76, 201, 240, 0.025) 1px, transparent 1px);
-            background-size: 44px 44px;
-            mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-        }
+        
         .shell {
             position: relative; z-index: 1; display: flex;
             width: 100%; max-width: 1180px; height: 92vh;
@@ -56,6 +41,7 @@
         .sidebar {
             width: 340px; display: flex; flex-direction: column;
             background: var(--bg); border-right: 1px solid var(--line); flex-shrink: 0;
+            transition: transform 0.3s ease;
         }
         .me { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
         .me-info { flex: 1; min-width: 0; }
@@ -122,7 +108,6 @@
             font-weight: 600; font-size: 14px; color: var(--accent);
             flex-shrink: 0; overflow: hidden; background-size: cover; background-position: center;
         }
-        .avatar.lg { width: 44px; height: 44px; border-radius: 11px; font-size: 15px; }
         .badge {
             display: inline-flex; align-items: center; justify-content: center;
             width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0;
@@ -132,18 +117,25 @@
         .badge.blue { background: var(--blue); }
         
         /* CHAT AREA */
-        .chat { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .chat { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
         .empty {
             flex: 1; display: flex; flex-direction: column; align-items: center;
             justify-content: center; gap: 14px; color: var(--text-mute);
         }
         .empty svg { width: 44px; height: 44px; color: var(--line-hi); }
         .empty p { font-size: 13.5px; }
+        
         .chat-head {
             padding: 14px 22px; border-bottom: 1px solid var(--line);
             display: none; align-items: center; gap: 12px; background: var(--surface);
+            flex-shrink: 0;
         }
         .chat-head.show { display: flex; }
+        
+        /* Tombol Back (Cuma muncul di HP) */
+        .back-btn { display: none; background: transparent; border: none; color: var(--text); cursor: pointer; padding: 5px; margin-left: -5px; }
+        .back-btn svg { width: 20px; height: 20px; }
+
         .chat-head-info { flex: 1; min-width: 0; }
         .chat-head-name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 5px; }
         .chat-head-phone { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
@@ -154,7 +146,7 @@
         
         /* BUBBLE CHAT */
         .msg {
-            max-width: 70%; padding: 10px 14px; font-size: 13.5px;
+            max-width: 75%; padding: 10px 14px; font-size: 13.5px;
             line-height: 1.5; border-radius: 14px; word-wrap: break-word; white-space: pre-wrap;
             cursor: pointer; transition: opacity 0.2s; position: relative;
             display: flex; flex-direction: column;
@@ -176,7 +168,7 @@
         .check-svg { width: 14px; height: 14px; }
 
         /* Voice Note UI */
-        .vn-container { display: flex; align-items: center; gap: 12px; min-width: 220px; padding: 4px; }
+        .vn-container { display: flex; align-items: center; gap: 12px; min-width: 200px; padding: 4px; }
         .vn-play-btn {
             width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.2);
             display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer;
@@ -192,15 +184,14 @@
 
         /* COMPOSER (INPUT) */
         .composer {
-            padding: 14px 18px; border-top: 1px solid var(--line);
-            display: none; gap: 10px; background: var(--surface); align-items: center;
-            position: relative; flex-wrap: wrap;
+            padding: 10px 15px; border-top: 1px solid var(--line);
+            display: none; gap: 8px; background: var(--surface); align-items: center;
+            position: relative; flex-wrap: wrap; flex-shrink: 0;
         }
         .composer.show { display: flex; }
         
-        /* Reply bar di atas input */
         .reply-bar {
-            width: 100%; padding: 10px 15px; background: var(--surface-2);
+            width: 100%; padding: 8px 12px; background: var(--surface-2);
             border-left: 3px solid var(--accent); border-radius: 6px;
             display: none; justify-content: space-between; align-items: center;
             font-size: 12px; color: var(--text-dim); margin-bottom: 5px;
@@ -209,15 +200,15 @@
         .reply-bar-close { cursor: pointer; color: var(--red); font-weight: bold; }
 
         .composer input[type="text"] {
-            flex: 1; padding: 11px 15px; background: var(--bg);
+            flex: 1; padding: 11px 15px; background: var(--bg); min-width: 100px;
             border: 1px solid var(--line); border-radius: 9px; color: var(--text);
-            font-family: inherit; font-size: 13.5px; outline: none; transition: border-color 0.15s;
+            font-family: inherit; font-size: 16px; outline: none; transition: border-color 0.15s;
         }
         .composer input[type="text"]:focus { border-color: var(--accent-dim); }
-        .composer input[type="text"]::placeholder { color: var(--text-mute); }
+        .composer input[type="text"]::placeholder { color: var(--text-mute); font-size: 14px; }
         
         .action-btn {
-            width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
             background: transparent; border: 1px solid var(--line); border-radius: 9px;
             color: var(--text-dim); cursor: pointer; transition: all 0.15s; flex-shrink: 0;
         }
@@ -228,11 +219,12 @@
         input[type="file"] { display: none; }
 
         .send-btn {
-            padding: 0 20px; height: 42px; background: var(--accent); border: none; border-radius: 9px;
+            padding: 0 16px; height: 40px; background: var(--accent); border: none; border-radius: 9px;
             color: #04121a; font-family: inherit; font-weight: 600; font-size: 13px;
-            cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+            cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center;
         }
-        .send-btn svg { width: 14px; height: 14px; }
+        .send-btn svg { width: 16px; height: 16px; display: none; }
+        .send-btn span { display: inline; }
         .send-btn:hover { background: #6ad5f5; }
         .send-btn:active { transform: scale(0.97); }
 
@@ -283,11 +275,54 @@
             font-size: 13px; cursor: pointer; transition: all 0.15s;
         }
         .btn-confirm-del:hover { background: #ff6b77; }
+
+        /* === RESPONSIVE UNTUK HP === */
+        @media (max-width: 768px) {
+            .shell {
+                height: 100vh; height: 100dvh; margin: 0; border-radius: 0; border: none; max-width: 100%;
+                position: relative; overflow: hidden;
+            }
+            
+            /* Sidebar jadi full screen & nimpa chat */
+            .sidebar {
+                width: 100%; border-right: none;
+                position: absolute; inset: 0; z-index: 10;
+                transform: translateX(-100%);
+            }
+            body.show-chat .sidebar { transform: translateX(-100%); }
+            body:not(.show-chat) .sidebar { transform: translateX(0); }
+            
+            /* Chat area jadi full screen */
+            .chat {
+                position: absolute; inset: 0; z-index: 20;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            }
+            body.show-chat .chat { transform: translateX(0); }
+            
+            /* Tombol back muncul */
+            .back-btn { display: block; }
+            
+            /* Sesuaiin padding & font */
+            .me { padding: 15px; }
+            .messages { padding: 15px; }
+            .msg { max-width: 85%; font-size: 14px; }
+            .composer { padding: 10px; gap: 6px; }
+            
+            /* Kirim jadi ikon aja biar gak makan tempat */
+            .send-btn span { display: none; }
+            .send-btn svg { display: block; }
+            .send-btn { width: 40px; padding: 0; }
+            
+            /* Action button jadi lebih kecil dikit */
+            .action-btn { width: 36px; height: 36px; }
+            .action-btn svg { width: 16px; height: 16px; }
+            
+            .vn-container { min-width: 180px; }
+        }
     </style>
 </head>
 <body>
-    <div class="bg"></div>
-
     <div class="shell">
         <aside class="sidebar">
             <div class="me">
@@ -327,13 +362,16 @@
             </div>
         </aside>
 
-        <main class="chat">
+        <main class="chat" id="mainChat">
             <div class="empty" id="emptyChat">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                 <p>Pilih percakapan untuk mulai</p>
             </div>
 
             <div class="chat-head" id="chatHeader">
+                <button class="back-btn" id="backBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                </button>
                 <div class="avatar" id="chatAvatar"></div>
                 <div class="chat-head-info">
                     <div class="chat-head-name" id="chatName">—</div>
@@ -348,9 +386,9 @@
 
             <div class="composer" id="composer">
                 <div class="reply-bar" id="replyBar">
-                    <div>
+                    <div style="min-width: 0;">
                         <div style="font-size: 10px; color: var(--accent); font-weight: bold;">Membalas pesan:</div>
-                        <div id="replyText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;"></div>
+                        <div id="replyText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                     </div>
                     <span class="reply-bar-close" id="cancelReply">✕</span>
                 </div>
@@ -367,8 +405,8 @@
                 <input type="text" id="messageInput" placeholder="Tulis pesan..." autocomplete="off">
                 
                 <button class="send-btn" id="sendBtn">
+                    <span>Kirim</span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Kirim
                 </button>
             </div>
         </main>
@@ -522,7 +560,6 @@
             modalDesc.textContent = desc;
             modalConfirmBtn.textContent = confirmText;
             
-            // Reset class
             modalConfirmBtn.className = 'btn-confirm-del';
             if (btnColor === 'primary') {
                 modalConfirmBtn.style.background = 'var(--accent)';
@@ -577,6 +614,11 @@
             setInterval(() => {
                 sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
             }, 30000);
+
+            // Tombol Back (HP)
+            document.getElementById('backBtn').addEventListener('click', () => {
+                document.body.classList.remove('show-chat');
+            });
         }
 
         async function loadUsers() {
@@ -706,6 +748,9 @@
                 ca.style.backgroundImage = 'none';
                 ca.textContent = name.charAt(0).toUpperCase();
             }
+
+            // Tampilkan chat di HP
+            document.body.classList.add('show-chat');
 
             cancelReply(); 
             await loadMessages(id);
@@ -954,7 +999,7 @@
             });
         });
 
-        // === CLEAR CHAT (PAKE MODAL TENGAH) ===
+        // === CLEAR CHAT ===
         document.getElementById('clearChatBtn').addEventListener('click', () => {
             if (!currentChatUser) return;
             showModal('Hapus Semua Chat?', 'Seluruh riwayat chat di room ini akan dihapus dari layar kamu.', 'Hapus Semua', 'danger', async () => {

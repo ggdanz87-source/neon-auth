@@ -1,8 +1,8 @@
 // ============================================
 // GANTI PAKE URL & KEY SUPABASE LO!
 // ============================================
-const SUPABASE_URL = 'https://xxxxx.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_xxxxx';
+const SUPABASE_URL = 'https://hlhlpznffrnuvxgcuwiu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable__Xm9KHWul4yOcvbH9cPAGg_h_A4s0_O';
 
 // Init Supabase
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

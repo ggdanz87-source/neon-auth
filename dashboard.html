@@ -132,7 +132,6 @@
         }
         .chat-head.show { display: flex; }
         
-        /* Tombol Back (Cuma muncul di HP) */
         .back-btn { display: none; background: transparent; border: none; color: var(--text); cursor: pointer; padding: 5px; margin-left: -5px; }
         .back-btn svg { width: 20px; height: 20px; }
 
@@ -412,7 +411,6 @@
         </main>
     </div>
 
-    <!-- CONTEXT MENU -->
     <div class="ctx-menu" id="ctxMenu">
         <div class="ctx-item" id="ctxReply">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 00-4-4H4"/></svg>
@@ -428,7 +426,6 @@
         </div>
     </div>
 
-    <!-- MODAL KONFIRMASI UNIVERSAL -->
     <div class="modal-overlay" id="confirmModal">
         <div class="modal-box">
             <div class="modal-title" id="modalTitle">Konfirmasi</div>
@@ -548,7 +545,6 @@
             });
         }
 
-        // === MODAL ENGINE (TENGAH LAYAR) ===
         const confirmModal = document.getElementById('confirmModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalDesc = document.getElementById('modalDesc');
@@ -584,7 +580,6 @@
             modalCallback = null;
         });
 
-        // === INIT ===
         async function init() {
             initTheme();
 
@@ -615,7 +610,6 @@
                 sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
             }, 30000);
 
-            // Tombol Back (HP)
             document.getElementById('backBtn').addEventListener('click', () => {
                 document.body.classList.remove('show-chat');
             });
@@ -749,7 +743,6 @@
                 ca.textContent = name.charAt(0).toUpperCase();
             }
 
-            // Tampilkan chat di HP
             document.body.classList.add('show-chat');
 
             cancelReply(); 
@@ -999,19 +992,22 @@
             });
         });
 
-        // === CLEAR CHAT ===
+        // === CLEAR CHAT (HAPUS PERMANEN DARI DATABASE) ===
         document.getElementById('clearChatBtn').addEventListener('click', () => {
             if (!currentChatUser) return;
-            showModal('Hapus Semua Chat?', 'Seluruh riwayat chat di room ini akan dihapus dari layar kamu.', 'Hapus Semua', 'danger', async () => {
-                const { data: msgs } = await sb.from('messages')
-                    .select('id')
+            showModal('Hapus Semua Chat?', 'Seluruh riwayat chat di room ini akan dihapus permanen dari database.', 'Hapus Semua', 'danger', async () => {
+                // Hapus permanen dari tabel messages
+                const { error } = await sb.from('messages')
+                    .delete()
                     .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${currentChatUser.id}),and(sender_id.eq.${currentChatUser.id},receiver_id.eq.${currentUser.id})`);
                 
-                if (msgs && msgs.length > 0) {
-                    const inserts = msgs.map(m => ({ message_id: m.id, user_id: currentUser.id }));
-                    await sb.from('message_deletions').insert(inserts);
-                    document.getElementById('messages').innerHTML = '';
+                if (error) {
+                    showModal('Gagal Hapus', error.message, 'Tutup', 'primary', null);
+                    return;
                 }
+                
+                // Kosongin layar
+                document.getElementById('messages').innerHTML = '';
             });
         });
 

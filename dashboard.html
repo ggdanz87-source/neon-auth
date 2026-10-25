@@ -173,30 +173,20 @@
                 </div>
                 <div class="me-actions">
                     <a href="profile.html" class="icon-btn" title="Edit profil">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                     </a>
                     <a href="owner.html" class="icon-btn owner-active" id="ownerBtn" style="display:none;" title="Panel owner">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7l3-7z"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7l3-7z"/></svg>
                     </a>
                     <button class="icon-btn danger" id="logoutBtn" title="Keluar">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-                            <polyline points="16 17 21 12 16 7"/>
-                            <line x1="21" y1="12" x2="9" y2="12"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                     </button>
                 </div>
             </div>
 
             <div class="search">
                 <div class="search-input-wrap">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                     <input type="text" id="searchInput" placeholder="Cari nomor atau nama">
                 </div>
                 <div class="search-hint" id="searchHint">Ketik nomor lengkap untuk menemukan pengguna lain</div>
@@ -211,9 +201,7 @@
 
         <main class="chat">
             <div class="empty" id="emptyChat">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-                </svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                 <p>Pilih percakapan untuk mulai</p>
             </div>
 
@@ -230,10 +218,7 @@
             <div class="composer" id="composer">
                 <input type="text" id="messageInput" placeholder="Tulis pesan..." autocomplete="off">
                 <button class="send-btn" id="sendBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13"/>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     Kirim
                 </button>
             </div>
@@ -249,64 +234,46 @@
 
         const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
-        // =====================================================
-        // KAMUS TOXIC — tambah sendiri sesuai kebutuhan
-        // =====================================================
+        // === KAMUS TOXIC ===
         const TOXIC_WORDS = [
-            // kasar
             'anjing', 'anjg', 'anjir', 'anjay', 'asw', 'asu', 'bangsat', 'bgst',
             'bajingan', 'brengsek', 'setan', 'iblis', 'keparat', 'bedebah',
             'kontol', 'kntl', 'memek', 'mmk', 'pepek', 'puki', 'pukimak',
             'ngentot', 'ngentd', 'ngehe', 'jancok', 'jancuk', 'cok', 'cuk',
             'goblok', 'goblog', 'tolol', 'idiot', 'bego', 'bodoh', 'dungu',
             'sinting', 'gila', 'edan', 'sarap',
-            // ancaman / harassment
             'yatim', 'piatu', 'bocah', 'miskin', 'mati', 'matilo', 'bunuh',
             'bunuhdiri', 'cabul', 'perkosa', 'r***', 'r4p3',
-            // tambahan
             'kampret', 'kmpret', 'bejat', 'biadab', 'laknat', 'terkutuk',
-            'sialan', 'sial', 'bangsat', 'tai', 'taik', 'kotoran',
-            // english
+            'sialan', 'sial', 'tai', 'taik', 'kotoran',
             'fuck', 'fck', 'shit', 'bitch', 'bastard', 'dick', 'pussy',
             'asshole', 'cunt', 'whore', 'slut', 'retard'
         ];
 
-        // Kata yang bikin severity naik ke HIGH (ancaman / SARA / pelecehan berat)
         const HIGH_SEVERITY_WORDS = [
             'bunuh', 'matilo', 'bunuhdiri', 'perkosa', 'r4p3', 'cabul',
             'yatim', 'piatu', 'kampret', 'laknat', 'terkutuk', 'biadab'
         ];
 
-        // Normalisasi: lowercase, hapus karakter aneh, ganti angka/simbol yang mirip huruf
         function normalizeText(text) {
-            return text
-                .toLowerCase()
-                .replace(/[0@]/g, 'o')
-                .replace(/[1!|]/g, 'i')
-                .replace(/3/g, 'e')
-                .replace(/4/g, 'a')
-                .replace(/5/g, 's')
-                .replace(/7/g, 't')
-                .replace(/[^a-z\s]/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
+            return text.toLowerCase()
+                .replace(/[0@]/g, 'o').replace(/[1!|]/g, 'i').replace(/3/g, 'e')
+                .replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't')
+                .replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
         }
 
-        // Cek toxic, return { matched: [...], severity: 'low'|'high'|null }
         function detectToxic(text) {
             const norm = normalizeText(text);
             const words = norm.split(' ');
             const matched = [];
 
             TOXIC_WORDS.forEach(w => {
-                // cek exact word atau substring
                 if (words.includes(w) || norm.includes(w)) {
                     if (!matched.includes(w)) matched.push(w);
                 }
             });
 
             if (matched.length === 0) return { matched: [], severity: null };
-
             const isHigh = matched.some(w => HIGH_SEVERITY_WORDS.includes(w));
             return { matched, severity: isHigh ? 'high' : 'low' };
         }
@@ -498,51 +465,52 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        // === KIRIM PESAN + CEK TOXIC ===
+        // === KIRIM PESAN (CEK TOXIC DULU) ===
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const content = input.value.trim();
             if (!content || !currentChatUser) return;
+            
             input.value = '';
 
-            // 1. Insert pesan
-            const { data: inserted, error: insErr } = await sb.from('messages').insert({
-                sender_id: currentUser.id,
-                receiver_id: currentChatUser.id,
-                content
-            }).select().single();
-
-            if (insErr) {
-                console.error('Gagal kirim:', insErr);
-                return;
-            }
-
-            // 2. Cek toxic
+            // 1. CEK TOXIC DULU SEBELUM INSERT
             const { matched, severity } = detectToxic(content);
-
+            
             if (matched.length > 0) {
-                // Simpan ke log moderasi (fire and forget, gak ganggu UI)
-                sb.from('moderation_logs').insert({
+                console.log('[MODERASI] Terdeteksi kata toxic:', matched, 'Severity:', severity);
+                
+                // Tembak ke log moderasi
+                const { error: logErr } = await sb.from('moderation_logs').insert({
                     sender_id: currentUser.id,
                     receiver_id: currentChatUser.id,
-                    message_id: inserted?.id || null,
-                    content,
+                    content: content,
                     matched_words: matched,
-                    severity
-                }).then(({ error }) => {
-                    if (error) console.warn('Gagal simpan log:', error.message);
-                    else console.log('[MODERASI] Pesan toxic tercatat:', matched, severity);
+                    severity: severity
                 });
 
-                // Kasih tanda visual kecil ke user (opsional, subtle)
+                if (logErr) {
+                    console.error('GAGAL SIMPAN LOG:', logErr);
+                    alert('Sistem gagal mencatat log toxic! Cek Console (F12).');
+                } else {
+                    console.log('✅ Log toxic berhasil dicatat ke database.');
+                }
+
+                // Kasih peringatan ke user
                 if (severity === 'high') {
-                    // toast kecil — bukan blocking
                     showToxicWarning();
                 }
             }
+
+            // 2. BARU KIRIM PESAN KE TABEL CHAT
+            const { error: insErr } = await sb.from('messages').insert({
+                sender_id: currentUser.id,
+                receiver_id: currentChatUser.id,
+                content
+            });
+
+            if (insErr) console.error('Gagal kirim pesan:', insErr);
         }
 
-        // Peringatan subtle — gak block, cuma info
         function showToxicWarning() {
             const existing = document.getElementById('toxicWarn');
             if (existing) existing.remove();

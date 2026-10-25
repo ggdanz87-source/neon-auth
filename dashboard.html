@@ -142,17 +142,20 @@
         .msg {
             max-width: 70%; padding: 10px 14px; font-size: 13.5px;
             line-height: 1.5; border-radius: 14px; word-wrap: break-word; white-space: pre-wrap;
-            cursor: pointer; transition: opacity 0.2s;
+            cursor: pointer; transition: opacity 0.2s; position: relative;
         }
         .msg:active { opacity: 0.7; }
         .msg.mine { align-self: flex-end; background: var(--accent); color: #04121a; font-weight: 500; border-bottom-right-radius: 4px; }
         .msg.theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
         
         .msg img { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; }
+        
+        /* Audio Player Custom */
+        .msg audio { width: 250px; margin-top: 5px; display: block; }
 
         .composer {
             padding: 14px 18px; border-top: 1px solid var(--line);
-            display: none; gap: 10px; background: var(--surface);
+            display: none; gap: 10px; background: var(--surface); align-items: center;
         }
         .composer.show { display: flex; }
         .composer input[type="text"] {
@@ -163,17 +166,21 @@
         .composer input[type="text"]:focus { border-color: var(--accent-dim); }
         .composer input[type="text"]::placeholder { color: var(--text-mute); }
         
-        .attach-btn {
+        /* Tombol Aksi */
+        .action-btn {
             width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
             background: transparent; border: 1px solid var(--line); border-radius: 9px;
             color: var(--text-dim); cursor: pointer; transition: all 0.15s; flex-shrink: 0;
         }
-        .attach-btn:hover { border-color: var(--accent-dim); color: var(--accent); background: var(--surface-2); }
-        .attach-btn svg { width: 18px; height: 18px; }
+        .action-btn:hover { border-color: var(--accent-dim); color: var(--accent); background: var(--surface-2); }
+        .action-btn svg { width: 18px; height: 18px; }
+        .action-btn.recording { background: var(--red); border-color: var(--red); color: #fff; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
         input[type="file"] { display: none; }
 
         .send-btn {
-            padding: 0 20px; background: var(--accent); border: none; border-radius: 9px;
+            padding: 0 20px; height: 42px; background: var(--accent); border: none; border-radius: 9px;
             color: #04121a; font-family: inherit; font-weight: 600; font-size: 13px;
             cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
         }
@@ -284,11 +291,17 @@
             <div class="messages" id="messages"></div>
 
             <div class="composer" id="composer">
-                <button class="attach-btn" id="attachBtn" title="Kirim Gambar">
+                <!-- Tombol Upload Gambar -->
+                <button class="action-btn" id="attachBtn" title="Kirim Gambar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                 </button>
                 <input type="file" id="fileInput" accept="image/*">
-                
+
+                <!-- Tombol Rekam VN -->
+                <button class="action-btn" id="recordBtn" title="Rekam Suara">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+
                 <input type="text" id="messageInput" placeholder="Tulis pesan..." autocomplete="off">
                 
                 <button class="send-btn" id="sendBtn">
@@ -378,6 +391,12 @@
         let activeMessage = null;
         let activeAction = null;
 
+        // Variabel Voice Note
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingTimeout;
+
         function badgeHTML(badge) {
             if (badge === 'red')  return `<span class="badge red" title="Owner">${CHECK_SVG}</span>`;
             if (badge === 'blue') return `<span class="badge blue" title="Terverifikasi">${CHECK_SVG}</span>`;
@@ -397,14 +416,11 @@
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(800, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
-                
                 gain.gain.setValueAtTime(0.1, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start();
@@ -435,7 +451,6 @@
 
             await loadUsers();
 
-            // Set status online (heartbeat tiap 30 detik)
             await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
             setInterval(() => {
                 sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
@@ -457,7 +472,6 @@
             if (!lastSeenStr) return false;
             const lastSeen = new Date(lastSeenStr).getTime();
             const now = new Date().getTime();
-            // Online kalo terakhir keliatan kurang dari 1 menit yang lalu
             return (now - lastSeen) < 60000; 
         }
 
@@ -580,7 +594,6 @@
                     if ((m.sender_id === currentUser.id && m.receiver_id === id) ||
                         (m.sender_id === id && m.receiver_id === currentUser.id)) {
                         appendMessage(m);
-                        // Bunyiin notif kalo pesannya dari lawan
                         if (m.sender_id === id) playNotifSound();
                     }
                 })
@@ -600,7 +613,6 @@
                 .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${currentUser.id})`)
                 .order('created_at', { ascending: true });
             
-            // Ambil data pesan yang udah dihapus (Hapus untuk saya)
             const { data: deletions } = await sb.from('message_deletions')
                 .select('message_id')
                 .eq('user_id', currentUser.id);
@@ -612,8 +624,8 @@
             
             if (messages) {
                 messages.forEach(m => {
-                    if (m.content === '[Pesan ini telah dihapus]') return; // skip yang dihapus semua
-                    if (deletedIds.has(m.id)) return; // skip yang dihapus buat saya
+                    if (m.content === '[Pesan ini telah dihapus]') return;
+                    if (deletedIds.has(m.id)) return;
                     appendMessage(m);
                 });
             }
@@ -632,6 +644,15 @@
                 if (m.content && m.content.trim() !== '') {
                     div.innerHTML += `<div style="margin-top: 5px;">${m.content}</div>`;
                 }
+            } else if (m.file_url && m.file_type === 'audio') {
+                // Render Pemutar Audio
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                        <span style="font-size: 12px;">Voice Note</span>
+                    </div>
+                    <audio controls src="${m.file_url}" style="width: 220px; margin-top: 6px;"></audio>
+                `;
             } else {
                 div.textContent = m.content;
             }
@@ -750,7 +771,6 @@
             const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
             const fileUrl = urlData.publicUrl;
 
-            // Kirim pesan berisi gambar
             await sb.from('messages').insert({
                 sender_id: currentUser.id,
                 receiver_id: currentChatUser.id,
@@ -759,7 +779,77 @@
                 file_type: 'image'
             });
 
-            e.target.value = ''; // Reset input
+            e.target.value = ''; 
+        });
+
+        // === REKAM VOICE NOTE ===
+        const recordBtn = document.getElementById('recordBtn');
+        
+        recordBtn.addEventListener('click', async () => {
+            if (!currentChatUser) return;
+
+            if (!isRecording) {
+                // Mulai rekam
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) audioChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const fileName = `${currentUser.id}/${Date.now()}.webm`;
+                        
+                        // Visual: Kembali normal
+                        recordBtn.classList.remove('recording');
+                        isRecording = false;
+                        recordBtn.title = "Rekam Suara";
+
+                        // Upload ke Supabase
+                        const { error: upErr } = await sb.storage.from('chat_uploads').upload(fileName, audioBlob);
+                        if (upErr) {
+                            alert('Gagal upload VN: ' + upErr.message);
+                            return;
+                        }
+
+                        const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
+                        
+                        // Kirim ke tabel messages
+                        await sb.from('messages').insert({
+                            sender_id: currentUser.id,
+                            receiver_id: currentChatUser.id,
+                            content: '',
+                            file_url: urlData.publicUrl,
+                            file_type: 'audio'
+                        });
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    recordBtn.classList.add('recording');
+                    recordBtn.title = "Merekam... Klik lagi buat kirim";
+
+                    // Auto stop setelah 60 detik
+                    recordingTimeout = setTimeout(() => {
+                        if (isRecording) mediaRecorder.stop();
+                    }, 60000);
+
+                } catch (err) {
+                    alert("Akses mikrofon ditolak! Pastikan lo ngasih izin.");
+                    console.error(err);
+                }
+            } else {
+                // Stop rekam
+                clearTimeout(recordingTimeout);
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    // Matiin stream biar lampu mikrofon mati
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+            }
         });
 
         async function sendMessage() {

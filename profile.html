@@ -3,88 +3,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Profil — Zerozx Neon</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Edit Profil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --bg: #050508; --card: rgba(10, 10, 15, 0.85); --border: rgba(0, 150, 255, 0.2);
-            --text: #e0e0e0; --text-dim: #7a7a85; --neon: #00d4ff;
-        }
-        body {
-            font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
-            min-height: 100vh; display: flex; justify-content: center; align-items: center;
-            background: radial-gradient(circle at top right, #001f3f 0%, #050508 50%);
-        }
-        .card {
-            background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border);
-            border-radius: 20px; padding: 40px; width: 100%; max-width: 450px;
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.1);
-        }
-        h1 { font-family: 'Orbitron', sans-serif; color: var(--neon); text-align: center; margin-bottom: 30px; font-size: 24px;}
-        
-        .avatar-section { text-align: center; margin-bottom: 25px; }
-        .avatar-preview {
-            width: 110px; height: 110px; border-radius: 50%; background: #111;
-            margin: 0 auto; border: 3px solid var(--neon); display: flex;
-            align-items: center; justify-content: center; font-size: 40px; font-weight: bold;
-            overflow: hidden; background-size: cover; background-position: center;
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
-        }
-        .file-input { display: none; }
-        .btn-upload {
-            display: inline-block; margin-top: 15px; padding: 8px 20px; background: rgba(0,212,255,0.1);
-            border: 1px solid var(--neon); color: var(--neon); border-radius: 8px;
-            cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s;
-        }
-        .btn-upload:hover { background: var(--neon); color: #000; }
 
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-size: 12px; color: var(--neon); margin-bottom: 8px; font-weight: bold; }
-        .form-group input, .form-group textarea {
-            width: 100%; padding: 14px; background: rgba(0,0,0,0.5); border: 1px solid var(--border);
-            border-radius: 10px; color: #fff; font-family: inherit; outline: none; resize: vertical;
+        :root {
+            --bg:        #08090c;
+            --surface:   #0f1116;
+            --surface-2: #14171e;
+            --line:      #1e232d;
+            --line-hi:   #2a3140;
+            --text:      #e8ecf2;
+            --text-dim:  #7b8493;
+            --text-mute: #4d5563;
+            --accent:    #4cc9f0;
+            --accent-dim:#1d6d85;
+            --red:       #ff4757;
+            --blue:      #3a86ff;
+            --success:   #2ec4b6;
         }
-        .form-group input:focus, .form-group textarea:focus { border-color: var(--neon); box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); }
-        
-        button.btn-save {
-            width: 100%; padding: 16px; background: linear-gradient(135deg, #0088cc, #00d4ff);
-            border: none; border-radius: 10px; color: #000; font-weight: 800; font-size: 14px; cursor: pointer;
-            margin-top: 10px; transition: 0.3s;
+
+        body {
+            font-family: 'Space Grotesk', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            -webkit-font-smoothing: antialiased;
         }
-        button.btn-save:hover { box-shadow: 0 0 25px var(--neon); transform: translateY(-2px); }
-        
-        .back-link { display: block; text-align: center; margin-top: 20px; color: var(--text-dim); text-decoration: none; font-size: 13px; }
-        .back-link:hover { color: var(--neon); }
-        .msg { text-align: center; padding: 12px; border-radius: 8px; margin-top: 15px; display: none; font-size: 13px; }
-        .msg.error { display: block; background: rgba(255,68,68,0.1); color: #ff4444; border: 1px solid #ff4444; }
-        .msg.success { display: block; background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid #00ff88; }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 50% -10%, rgba(76, 201, 240, 0.1), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(58, 134, 255, 0.05), transparent);
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(76, 201, 240, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(76, 201, 240, 0.02) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+            pointer-events: none;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 460px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 26px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--line);
+        }
+        .head-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+        .head-title svg {
+            width: 16px;
+            height: 16px;
+            color: var(--accent);
+        }
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+        .close-btn:hover {
+            border-color: var(--line-hi);
+            color: var(--text);
+            background: var(--surface-2);
+        }
+        .close-btn svg { width: 14px; height: 14px; }
+
+        /* Avatar section */
+        .avatar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 26px;
+        }
+        .avatar-wrap {
+            position: relative;
+            margin-bottom: 12px;
+        }
+        .avatar-preview {
+            width: 104px;
+            height: 104px;
+            border-radius: 22px;
+            background: var(--surface-2);
+            border: 1px solid var(--line-hi);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            font-weight: 600;
+            color: var(--accent);
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+        .avatar-edit-btn {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--accent);
+            border: 2px solid var(--surface);
+            color: #04121a;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+        .avatar-edit-btn:hover { background: #6ad5f5; }
+        .avatar-edit-btn svg { width: 14px; height: 14px; }
+        .file-input { display: none; }
+
+        .avatar-hint {
+            font-size: 11.5px;
+            color: var(--text-mute);
+        }
+
+        /* Form */
+        .field {
+            margin-bottom: 16px;
+        }
+        .field label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-mute);
+            font-weight: 600;
+            margin-bottom: 7px;
+        }
+        .field input,
+        .field textarea {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 13.5px;
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.15s;
+        }
+        .field input::placeholder,
+        .field textarea::placeholder { color: var(--text-mute); }
+        .field input:focus,
+        .field textarea:focus { border-color: var(--accent-dim); }
+        .field textarea { min-height: 70px; }
+
+        .field.readonly input {
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            cursor: not-allowed;
+        }
+
+        .msg {
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 12.5px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+        .msg svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .msg.ok {
+            display: flex;
+            background: rgba(46, 196, 182, 0.08);
+            color: var(--success);
+            border: 1px solid rgba(46, 196, 182, 0.3);
+        }
+        .msg.err {
+            display: flex;
+            background: rgba(255, 71, 87, 0.08);
+            color: var(--red);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 22px;
+            padding-top: 20px;
+            border-top: 1px solid var(--line);
+        }
+        .btn {
+            flex: 1;
+            padding: 11px 18px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            text-decoration: none;
+        }
+        .btn svg { width: 14px; height: 14px; }
+        .btn-primary {
+            background: var(--accent);
+            border: none;
+            color: #04121a;
+        }
+        .btn-primary:hover { background: #6ad5f5; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:disabled {
+            background: var(--accent-dim);
+            color: var(--text-mute);
+            cursor: not-allowed;
+        }
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--line);
+            color: var(--text-dim);
+            flex: 0 0 auto;
+            padding-left: 18px;
+            padding-right: 18px;
+        }
+        .btn-ghost:hover {
+            border-color: var(--line-hi);
+            color: var(--text);
+            background: var(--surface-2);
+        }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>EDIT PROFIL</h1>
-        
+        <div class="head">
+            <div class="head-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Edit Profil
+            </div>
+            <a href="dashboard.html" class="close-btn" title="Tutup">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </a>
+        </div>
+
         <div class="avatar-section">
-            <div class="avatar-preview" id="avatarPreview">?</div>
-            <input type="file" id="avatarFile" class="file-input" accept="image/*">
-            <label for="avatarFile" class="btn-upload">📷 Ganti Foto</label>
+            <div class="avatar-wrap">
+                <div class="avatar-preview" id="avatarPreview">?</div>
+                <input type="file" id="avatarFile" class="file-input" accept="image/*">
+                <label for="avatarFile" class="avatar-edit-btn" title="Ganti foto">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                </label>
+            </div>
+            <div class="avatar-hint">Klik ikon kamera untuk mengganti foto</div>
+        </div>
+
+        <div class="field readonly">
+            <label>Nomor ID</label>
+            <input type="text" id="phoneDisplay" disabled>
         </div>
 
         <form id="profileForm">
-            <div class="form-group">
-                <label>Nama Lengkap</label>
-                <input type="text" id="fullName" required>
+            <div class="field">
+                <label for="fullName">Nama Lengkap</label>
+                <input type="text" id="fullName" placeholder="Nama kamu" required>
             </div>
-            <div class="form-group">
-                <label>Bio (Opsional)</label>
-                <textarea id="bio" rows="3" placeholder="Ceritain tentang diri lo..."></textarea>
+
+            <div class="field">
+                <label for="bio">Bio</label>
+                <textarea id="bio" placeholder="Ceritakan sedikit tentang dirimu..."></textarea>
             </div>
+
             <div class="msg" id="msgBox"></div>
-            <button type="submit" class="btn-save">💾 SIMPAN PERUBAHAN</button>
+
+            <div class="actions">
+                <a href="dashboard.html" class="btn btn-ghost">
+                    Batal
+                </a>
+                <button type="submit" class="btn btn-primary" id="saveBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Simpan
+                </button>
+            </div>
         </form>
-        
-        <a href="dashboard.html" class="back-link">← Balik ke Chat</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -93,11 +349,21 @@
         const SUPABASE_ANON_KEY = 'sb_publishable__Xm9KHWul4yOcvbH9cPAGg_h_A4s0_O';
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+        const ERROR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+
         let currentUser = null;
         let currentProfile = null;
         let selectedFile = null;
 
-        async function loadProfile() {
+        function showMsg(text, type) {
+            const el = document.getElementById('msgBox');
+            el.innerHTML = (type === 'ok' ? CHECK_SVG : ERROR_SVG) + '<span>' + text + '</span>';
+            el.className = 'msg ' + type;
+            setTimeout(() => { el.className = 'msg'; }, 4500);
+        }
+
+        async function init() {
             const { data: { session } } = await sb.auth.getSession();
             if (!session) { window.location.href = 'index.html'; return; }
             currentUser = session.user;
@@ -107,82 +373,75 @@
                 currentProfile = data;
                 document.getElementById('fullName').value = data.full_name || '';
                 document.getElementById('bio').value = data.bio || '';
-                
-                const avatarEl = document.getElementById('avatarPreview');
+                document.getElementById('phoneDisplay').value = data.phone_number || '—';
+
+                const av = document.getElementById('avatarPreview');
                 if (data.avatar_url) {
-                    avatarEl.style.backgroundImage = `url('${data.avatar_url}')`;
-                    avatarEl.textContent = '';
+                    av.style.backgroundImage = `url('${data.avatar_url}')`;
+                    av.textContent = '';
                 } else {
-                    avatarEl.textContent = (data.full_name || 'U').charAt(0).toUpperCase();
+                    av.textContent = (data.full_name || 'U').charAt(0).toUpperCase();
                 }
             }
         }
 
         document.getElementById('avatarFile').addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) {
-                selectedFile = file;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const avatarEl = document.getElementById('avatarPreview');
-                    avatarEl.style.backgroundImage = `url('${ev.target.result}')`;
-                    avatarEl.textContent = '';
-                };
-                reader.readAsDataURL(file);
-            }
+            if (!file) return;
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const av = document.getElementById('avatarPreview');
+                av.style.backgroundImage = `url('${ev.target.result}')`;
+                av.textContent = '';
+            };
+            reader.readAsDataURL(file);
         });
 
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = e.target.querySelector('.btn-save');
-            const msg = document.getElementById('msgBox');
-            btn.textContent = 'Menyimpan...';
+            const btn = document.getElementById('saveBtn');
+            const originalHTML = btn.innerHTML;
             btn.disabled = true;
-            msg.className = 'msg';
+            btn.innerHTML = 'Menyimpan...';
 
-            const newName = document.getElementById('fullName').value;
-            const newBio = document.getElementById('bio').value;
-            let newAvatarUrl = currentProfile.avatar_url;
+            const newName = document.getElementById('fullName').value.trim();
+            const newBio = document.getElementById('bio').value.trim();
+            let newAvatarUrl = currentProfile?.avatar_url || null;
 
-            // 1. Upload Foto Kalo Ada File Baru
             if (selectedFile) {
-                const fileExt = selectedFile.name.split('.').pop();
-                const fileName = `${currentUser.id}/${Date.now()}.${fileExt}`;
-                
-                const { error: uploadErr } = await sb.storage.from('avatars').upload(fileName, selectedFile);
-                
-                if (uploadErr) {
-                    msg.className = 'msg error';
-                    msg.textContent = 'Gagal upload foto: ' + uploadErr.message;
-                    btn.textContent = '💾 SIMPAN PERUBAHAN';
+                const ext = selectedFile.name.split('.').pop();
+                const fileName = `${currentUser.id}/${Date.now()}.${ext}`;
+                const { error: upErr } = await sb.storage.from('avatars').upload(fileName, selectedFile);
+
+                if (upErr) {
+                    showMsg('Gagal upload foto: ' + upErr.message, 'err');
                     btn.disabled = false;
+                    btn.innerHTML = originalHTML;
                     return;
                 }
-                
                 const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName);
                 newAvatarUrl = urlData.publicUrl;
             }
 
-            // 2. Update Data Profil
-            const { error: updateErr } = await sb.from('profiles').update({
+            const { error: upErr } = await sb.from('profiles').update({
                 full_name: newName,
                 bio: newBio,
                 avatar_url: newAvatarUrl
             }).eq('id', currentUser.id);
 
-            if (updateErr) {
-                msg.className = 'msg error';
-                msg.textContent = 'Gagal simpan: ' + updateErr.message;
-                btn.textContent = '💾 SIMPAN PERUBAHAN';
+            if (upErr) {
+                showMsg('Gagal simpan: ' + upErr.message, 'err');
                 btn.disabled = false;
-            } else {
-                msg.className = 'msg success';
-                msg.textContent = '✅ Profil berhasil diupdate!';
-                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+                btn.innerHTML = originalHTML;
+                return;
             }
+
+            showMsg('Profil berhasil diperbarui', 'ok');
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
         });
 
-        loadProfile();
+        init();
     </script>
 </body>
 </html>

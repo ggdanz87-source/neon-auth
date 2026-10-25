@@ -20,7 +20,7 @@
             font-family: 'Space Grotesk', system-ui, sans-serif;
             background: var(--bg); color: var(--text);
             height: 100vh; overflow: hidden; -webkit-font-smoothing: antialiased;
-            user-select: none; /* Biar text gak ke-blok pas long press */
+            user-select: none;
         }
         .bg {
             position: fixed; inset: 0; z-index: 0;
@@ -140,7 +140,7 @@
             line-height: 1.5; border-radius: 14px; word-wrap: break-word; white-space: pre-wrap;
             cursor: pointer; transition: opacity 0.2s;
         }
-        .msg:active { opacity: 0.7; } /* Efek pas ditekan */
+        .msg:active { opacity: 0.7; }
         .msg.mine { align-self: flex-end; background: var(--accent); color: #04121a; font-weight: 500; border-bottom-right-radius: 4px; }
         .msg.theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
 
@@ -175,7 +175,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             padding: 6px;
             display: none;
-            min-width: 140px;
+            min-width: 180px;
             animation: popIn 0.1s ease-out;
         }
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -195,6 +195,37 @@
         .ctx-item.danger { color: var(--red); }
         .ctx-item.danger:hover { background: rgba(255, 71, 87, 0.1); }
         .ctx-item svg { width: 14px; height: 14px; }
+
+        /* === MODAL KONFIRMASI TENGAH LAYAR === */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 100000;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; animation: fadeIn 0.15s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-box {
+            background: var(--surface); border: 1px solid var(--line-hi);
+            border-radius: 12px; padding: 24px; max-width: 340px; width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+            animation: slideUp 0.2s ease;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-title { font-weight: 600; font-size: 16px; margin-bottom: 8px; color: var(--text); }
+        .modal-desc { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-cancel {
+            padding: 9px 16px; background: transparent; border: 1px solid var(--line-hi);
+            border-radius: 7px; color: var(--text); font-family: inherit; font-weight: 500;
+            font-size: 13px; cursor: pointer; transition: all 0.15s;
+        }
+        .btn-cancel:hover { background: var(--surface-2); }
+        .btn-confirm-del {
+            padding: 9px 16px; background: var(--red); border: none;
+            border-radius: 7px; color: #fff; font-family: inherit; font-weight: 600;
+            font-size: 13px; cursor: pointer; transition: all 0.15s;
+        }
+        .btn-confirm-del:hover { background: #ff6b77; }
     </style>
 </head>
 <body>
@@ -262,11 +293,29 @@
         </main>
     </div>
 
-    <!-- KONTEXT MENU (Klik Kanan / Tekan Lama) -->
+    <!-- KONTEXT MENU -->
     <div class="ctx-menu" id="ctxMenu">
-        <div class="ctx-item danger" id="ctxDelete">
+        <!-- Hapus untuk semua (cuma muncul kalo pesan sendiri) -->
+        <div class="ctx-item danger" id="ctxDeleteAll" style="display:none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-            Hapus Pesan
+            Hapus untuk semua
+        </div>
+        <!-- Hapus untuk saya (selalu muncul) -->
+        <div class="ctx-item danger" id="ctxDeleteMe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            Hapus untuk saya
+        </div>
+    </div>
+
+    <!-- MODAL KONFIRMASI TENGAH LAYAR -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-box">
+            <div class="modal-title" id="modalTitle">Hapus Pesan?</div>
+            <div class="modal-desc" id="modalDesc">Pesan ini akan dihapus.</div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="modalCancel">Batal</button>
+                <button class="btn-confirm-del" id="modalConfirm">Hapus</button>
+            </div>
         </div>
     </div>
 
@@ -325,7 +374,8 @@
         let messageSubscription = null;
         let allUsers = [];
         let isOwner = false;
-        let activeMessageId = null;
+        let activeMessage = null; // Simpan objek pesan yang lagi di-klik
+        let activeAction = null; // 'delete_all' | 'delete_me'
 
         function badgeHTML(badge) {
             if (badge === 'red')  return `<span class="badge red" title="Owner">${CHECK_SVG}</span>`;
@@ -479,17 +529,22 @@
             messageSubscription = sb.channel('messages-realtime')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
                     const m = payload.new;
+                    // Cegah pesan muncul kalo udah ditandain deleted di device ini
+                    if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
+                    if (m.sender_id === id && m.deleted_by_receiver) return;
+
                     if ((m.sender_id === currentUser.id && m.receiver_id === id) ||
                         (m.sender_id === id && m.receiver_id === currentUser.id)) {
                         appendMessage(m);
                     }
                 })
-                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (payload) => {
-                    // Hapus dari layar secara realtime jika lawan ngapus (karena policy ngebolehin delete)
-                    const m = payload.old;
-                    if (m && m.id) {
-                        const el = document.querySelector(`.msg[data-id="${m.id}"]`);
-                        if (el) el.remove();
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
+                    const m = payload.new;
+                    const el = document.querySelector(`.msg[data-id="${m.id}"]`);
+                    
+                    // Kalo dihapus untuk semua, buang dari layar
+                    if (m.deleted_by_sender && m.deleted_by_receiver && el) {
+                        el.remove();
                     }
                 })
                 .subscribe();
@@ -500,27 +555,38 @@
                 .select('*')
                 .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${currentUser.id})`)
                 .order('created_at', { ascending: true });
+            
             const box = document.getElementById('messages');
             box.innerHTML = '';
-            if (data) data.forEach(appendMessage);
+            
+            if (data) {
+                data.forEach(m => {
+                    // Cek apakah pesan udah dihapus di device kita
+                    if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
+                    if (m.sender_id === otherId && m.deleted_by_receiver) return;
+                    appendMessage(m);
+                });
+            }
         }
 
         function appendMessage(m) {
-            // Cegah duplikat
             if (document.querySelector(`.msg[data-id="${m.id}"]`)) return;
 
             const box = document.getElementById('messages');
             const mine = m.sender_id === currentUser.id;
             const div = document.createElement('div');
             div.className = `msg ${mine ? 'mine' : 'theirs'}`;
-            div.dataset.id = m.id; // Simpan ID pesan buat hapus
+            div.dataset.id = m.id;
             div.textContent = m.content;
 
-            // --- LOGIKA KLIK KANAN & TEKAN LAMA ---
+            // Simpan data full message di dataset
+            div.dataset.mine = mine ? '1' : '0';
+
             // Klik Kanan (PC)
             div.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
-                showContextMenu(e.clientX, e.clientY, m.id);
+                e.stopPropagation();
+                showContextMenu(e.clientX, e.clientY, m);
             });
 
             // Tekan Lama (HP)
@@ -528,9 +594,9 @@
             div.addEventListener('touchstart', (e) => {
                 pressTimer = setTimeout(() => {
                     const touch = e.touches[0];
-                    showContextMenu(touch.clientX, touch.clientY, m.id);
-                    if (navigator.vibrate) navigator.vibrate(50); // Getar dikit
-                }, 500); // 500ms tahan
+                    showContextMenu(touch.clientX, touch.clientY, m);
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }, 400); 
             });
             div.addEventListener('touchend', () => clearTimeout(pressTimer));
             div.addEventListener('touchmove', () => clearTimeout(pressTimer));
@@ -542,11 +608,15 @@
         // === KONTEXT MENU LOGIC ===
         const ctxMenu = document.getElementById('ctxMenu');
         
-        function showContextMenu(x, y, msgId) {
-            activeMessageId = msgId;
+        function showContextMenu(x, y, msgData) {
+            activeMessage = msgData;
+            const isMine = msgData.sender_id === currentUser.id;
+
+            // Tampilkan "Hapus untuk semua" cuma kalo punya sendiri
+            const elAll = document.getElementById('ctxDeleteAll');
+            elAll.style.display = isMine ? 'flex' : 'none';
             
-            // Biar gak kepotong layar
-            const menuW = 150, menuH = 50;
+            const menuW = 180, menuH = isMine ? 90 : 50;
             if (x + menuW > window.innerWidth) x -= menuW;
             if (y + menuH > window.innerHeight) y -= menuH;
 
@@ -560,34 +630,70 @@
             if (!ctxMenu.contains(e.target)) ctxMenu.classList.remove('show');
         });
 
-        // Aksi Hapus Pesan
-        document.getElementById('ctxDelete').addEventListener('click', async () => {
-            if (!activeMessageId) return;
+        // Cegah menu browser di semua tempat
+        document.addEventListener('contextmenu', (e) => {
+            if (!e.target.closest('.msg')) e.preventDefault(); 
+        });
+
+        // === MODAL KONFIRMASI ===
+        const confirmModal = document.getElementById('confirmModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDesc = document.getElementById('modalDesc');
+
+        function openModal(title, desc, action) {
+            modalTitle.textContent = title;
+            modalDesc.textContent = desc;
+            activeAction = action;
+            confirmModal.classList.add('show');
+        }
+
+        document.getElementById('modalCancel').addEventListener('click', () => {
+            confirmModal.classList.remove('show');
+            activeAction = null;
+        });
+
+        // Aksi Klik Hapus untuk Semua
+        document.getElementById('ctxDeleteAll').addEventListener('click', () => {
             ctxMenu.classList.remove('show');
+            openModal('Hapus untuk semua?', 'Pesan ini akan hilang dari layar kamu dan lawan bicara.', 'delete_all');
+        });
 
-            const el = document.querySelector(`.msg[data-id="${activeMessageId}"]`);
-            if (!el) return;
+        // Aksi Klik Hapus untuk Saya
+        document.getElementById('ctxDeleteMe').addEventListener('click', () => {
+            ctxMenu.classList.remove('show');
+            openModal('Hapus pesan?', 'Pesan ini hanya akan hilang dari layar kamu sendiri.', 'delete_me');
+        });
 
-            const isMine = el.classList.contains('mine');
-            if (!isMine) {
-                alert("Lo cuma bisa hapus pesan lo sendiri, gak bisa hapus chat orang lain di device lo.");
-                return;
+        // PROSES HAPUS PAS DIKLIK "HAPUS" DI MODAL
+        document.getElementById('modalConfirm').addEventListener('click', async () => {
+            if (!activeMessage || !activeAction) return;
+            confirmModal.classList.remove('show');
+
+            const m = activeMessage;
+            const isMine = m.sender_id === currentUser.id;
+            const el = document.querySelector(`.msg[data-id="${m.id}"]`);
+
+            if (activeAction === 'delete_all') {
+                if (!isMine) return;
+                // Hapus total dari database
+                await sb.from('messages').delete().eq('id', m.id);
+                if (el) el.remove();
+            } 
+            else if (activeAction === 'delete_me') {
+                // Tandain aja kalo si A / B udah hapus
+                const updateData = isMine ? { deleted_by_sender: true } : { deleted_by_receiver: true };
+                await sb.from('messages').update(updateData).eq('id', m.id);
+                
+                // Buat "Hapus untuk semua" bener-bener hapus di DB kalo dua-duanya udah hapus
+                if (m.deleted_by_sender && m.deleted_by_receiver) {
+                    await sb.from('messages').delete().eq('id', m.id);
+                }
+                
+                if (el) el.remove();
             }
 
-            if (!confirm('Yakin mau hapus pesan ini?')) return;
-
-            // Hapus dari Supabase
-            const { error } = await sb.from('messages').delete().eq('id', activeMessageId);
-            
-            if (error) {
-                console.error('Gagal hapus:', error);
-                alert('Gagal hapus pesan: ' + error.message);
-                return;
-            }
-
-            // Hapus dari layar
-            el.remove();
-            activeMessageId = null;
+            activeMessage = null;
+            activeAction = null;
         });
 
         // === KIRIM PESAN ===
@@ -600,7 +706,6 @@
             const { matched, severity } = detectToxic(content);
             
             if (matched.length > 0) {
-                console.log('[MODERASI] Terdeteksi kata toxic:', matched, 'Severity:', severity);
                 const { error: logErr } = await sb.from('moderation_logs').insert({
                     sender_id: currentUser.id,
                     receiver_id: currentChatUser.id,

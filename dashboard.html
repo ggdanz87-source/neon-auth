@@ -514,7 +514,7 @@
                     if ((m.sender_id === currentUser.id && m.receiver_id === id) ||
                         (m.sender_id === id && m.receiver_id === currentUser.id)) {
                         
-                        // Filter logic kalo di-refresh
+                        // LOGIKA FILTER DI REALTIME
                         if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
                         if (m.sender_id === id && m.deleted_by_receiver) return;
                         
@@ -524,8 +524,6 @@
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
                     const m = payload.new;
                     const el = document.querySelector(`.msg[data-id="${m.id}"]`);
-                    
-                    // Kalo ada update (dihapus untuk semua), ubah jadi teks "[Pesan telah dihapus]"
                     if (m.content === '[Pesan telah dihapus]' && el) {
                         el.className = `msg ${m.sender_id === currentUser.id ? 'mine' : 'theirs'} deleted`;
                         el.textContent = '[Pesan telah dihapus]';
@@ -545,7 +543,7 @@
             
             if (data) {
                 data.forEach(m => {
-                    // Filter hapus untuk saya
+                    // LOGIKA FILTER PAS REFRESH
                     if (m.sender_id === currentUser.id && m.deleted_by_sender) return;
                     if (m.sender_id === otherId && m.deleted_by_receiver) return;
 
@@ -562,7 +560,7 @@
             const div = document.createElement('div');
             div.className = `msg ${mine ? 'mine' : 'theirs'}`;
             
-            // Kalo pesannya udah dihapus (misal baru refresh), tampilin teks hapus
+            // Kalo pesannya udah dihapus (pas refresh), tampilin teks hapus
             if (m.content === '[Pesan telah dihapus]') {
                 div.classList.add('deleted');
                 div.textContent = '[Pesan telah dihapus]';
@@ -572,7 +570,6 @@
 
             div.dataset.id = m.id;
 
-            // Event Listener
             div.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -656,7 +653,7 @@
 
             if (activeAction === 'delete_all') {
                 if (!isMine) return;
-                // GANTI TEKS JADI [Pesan telah dihapus] (Gak bener-bener hapus dari DB biar lawan bisa liat dihapus)
+                // GANTI TEKS JADI [Pesan telah dihapus]
                 await sb.from('messages').update({ content: '[Pesan telah dihapus]' }).eq('id', m.id);
                 
                 if (el) {
@@ -665,10 +662,9 @@
                 }
             } 
             else if (activeAction === 'delete_me') {
-                // GANTI TEKS JADI KOSONG DI DATABASE BIAR PAS REFRESH HILANG
+                // UBAH FLAG BIAR PAS REFRESH GAK MUNCUL
                 const updateData = isMine ? { deleted_by_sender: true } : { deleted_by_receiver: true };
-                // Hapus permanen datanya dari DB biar refresh gak muncul
-                await sb.from('messages').delete().eq('id', m.id); 
+                await sb.from('messages').update(updateData).eq('id', m.id);
                 
                 if (el) el.remove();
             }

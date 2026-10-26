@@ -143,14 +143,11 @@
         .chat {
             flex: 1; display: flex; flex-direction: column;
             background: var(--bg); position: relative;
-            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
-            background-repeat: repeat;
-            background-blend-mode: soft-light;
-            background-size: 400px;
-        }
-        body.light-mode .chat {
-            background-blend-mode: overlay;
-            opacity: 0.9;
+            /* GANTI BACKGROUND DI SINI */
+            background-image: url('https://4kwallpapers.com/images/walls/thumbs_3t/27569.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
         }
         
         .chat-head {
@@ -178,9 +175,9 @@
             cursor: pointer; position: relative; display: flex; flex-direction: column;
             box-shadow: 0 1px 1px rgba(0,0,0,0.1);
         }
+        /* Warna Bubble Chat */
         .msg.mine { align-self: flex-end; background: #005c4b; color: #e8ecf2; border-top-right-radius: 0; }
         body.light-mode .msg.mine { background: #d9fdd3; color: #111318; }
-        
         .msg.theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); border-top-left-radius: 0; }
         
         /* Reply UI */
@@ -372,7 +369,6 @@
             <aside class="list-panel" id="listPanel">
                 <div class="list-header">
                     <div class="list-title" id="panelTitle">Chat</div>
-                    <!-- Tombol Owner (kalau di desktop udah ada di sidebar, ini opsional) -->
                 </div>
 
                 <div class="search" id="searchContainer">
@@ -402,9 +398,9 @@
 
             <!-- AREA CHAT -->
             <main class="chat" id="mainChat">
-                <div class="empty" id="emptyChat" style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:var(--text-mute); gap:15px;">
+                <div class="empty" id="emptyChat" style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:var(--text-mute); gap:15px; background:rgba(0,0,0,0.5);">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:60px;height:60px;opacity:0.3;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    <p>Pilih percakapan atau status untuk mulai</p>
+                    <p style="color:#fff;">Pilih percakapan atau status untuk mulai</p>
                 </div>
 
                 <div class="chat-head" id="chatHeader">

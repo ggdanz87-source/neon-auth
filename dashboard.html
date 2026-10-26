@@ -588,7 +588,7 @@
         let activeAction = null;
         let replyingTo = null;
         
-        let activeStatusId = null; // Nyimpen ID status yang lagi diliat
+        let activeStatusId = null; 
 
         let mediaRecorder;
         let audioChunks = [];
@@ -783,8 +783,13 @@
                     file_url: urlData.publicUrl,
                     file_type: 'image'
                 });
+                
+                // --- BAGIAN INI YANG GW UBAH ---
+                // Abis sukses, langsung pindah ke tab Status dan refresh list-nya
+                switchTab('status'); 
+                loadStatuses();
+                
                 showModal('Sukses', 'Status berhasil diupload!', 'Oke', 'primary', null);
-                if(currentTab === 'status') loadStatuses();
             };
             input.click();
         }
@@ -1362,7 +1367,6 @@
                 const avatar = s.profiles?.avatar_url || '';
                 const avatarHTML = avatar ? `<div class="avatar" style="background-image:url('${avatar}');"></div>` : `<div class="avatar">${name.charAt(0)}</div>`;
                 
-                // Cek apakah status ini milik user yang lagi login
                 const isMine = s.user_id === currentUser.id;
                 
                 return `
@@ -1381,7 +1385,6 @@
             document.getElementById('viewerName').textContent = name;
             document.getElementById('statusContent').innerHTML = `<img src="${fileUrl}" style="max-width:100%; max-height:80vh;">`;
             
-            // Munculin tombol hapus kalau itu status sendiri
             activeStatusId = id;
             if (isMine) {
                 document.getElementById('deleteStatusBtn').style.display = 'block';

@@ -33,12 +33,11 @@
             display: flex; width: 100%; height: 100vh; flex-direction: column;
         }
 
-        /* === LAYOUT UTAMA === */
         .main-layout {
             display: flex; flex: 1; overflow: hidden;
         }
 
-        /* === SIDEBAR KIRI (IKON) === */
+        /* SIDEBAR KIRI */
         .nav-sidebar {
             width: 68px; background: var(--panel-left);
             border-right: 1px solid var(--line);
@@ -63,17 +62,15 @@
         .nav-btn.active { background: var(--surface-2); color: var(--accent); }
         .nav-btn svg { width: 22px; height: 22px; }
         
-        /* Tombol Owner di Sidebar */
         .nav-btn.owner-btn { background: rgba(255, 71, 87, 0.1); color: var(--red); border: 1px solid rgba(255, 71, 87, 0.3); display: none; }
         .nav-btn.owner-btn:hover { background: rgba(255, 71, 87, 0.2); }
         
-        /* Tombol Add Status */
         .nav-btn.add-status-btn { color: var(--purple); }
         .nav-btn.add-status-btn:hover { background: rgba(157, 78, 221, 0.1); }
 
         .nav-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 
-        /* === PANEL KEDUA (LIST CHAT) === */
+        /* PANEL LIST CHAT */
         .list-panel {
             width: 360px; background: var(--surface);
             border-right: 1px solid var(--line);
@@ -121,7 +118,6 @@
             position: relative;
         }
         
-        /* Status Ring (Lingkaran Ungu) */
         .avatar.has-status::after {
             content: ''; position: absolute; inset: -3px;
             border-radius: 50%; border: 2px solid var(--purple);
@@ -139,11 +135,10 @@
         .online-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; display: inline-block; flex-shrink: 0; }
         .online-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
 
-        /* === CHAT AREA === */
+        /* CHAT AREA */
         .chat {
             flex: 1; display: flex; flex-direction: column;
             background: var(--bg); position: relative;
-            /* GANTI BACKGROUND DI SINI */
             background-image: url('https://4kwallpapers.com/images/walls/thumbs_3t/27569.jpg');
             background-repeat: no-repeat;
             background-size: cover;
@@ -175,12 +170,10 @@
             cursor: pointer; position: relative; display: flex; flex-direction: column;
             box-shadow: 0 1px 1px rgba(0,0,0,0.1);
         }
-        /* Warna Bubble Chat */
         .msg.mine { align-self: flex-end; background: #005c4b; color: #e8ecf2; border-top-right-radius: 0; }
         body.light-mode .msg.mine { background: #d9fdd3; color: #111318; }
         .msg.theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); border-top-left-radius: 0; }
         
-        /* Reply UI */
         .reply-preview {
             background: rgba(0,0,0,0.15); border-left: 3px solid var(--accent);
             padding: 6px 10px; border-radius: 4px; margin-bottom: 6px;
@@ -194,7 +187,6 @@
         .msg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 3px; font-size: 10.5px; opacity: 0.7; }
         .check-svg { width: 14px; height: 14px; }
 
-        /* Voice Note UI */
         .vn-container { display: flex; align-items: center; gap: 10px; min-width: 220px; padding: 4px; }
         .vn-play-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
         .vn-play-btn svg { width: 16px; height: 16px; fill: currentColor; }
@@ -203,7 +195,6 @@
         .vn-duration { font-size: 11px; font-family: 'JetBrains Mono', monospace; opacity: 0.8; }
         .vn-hidden-audio { display: none !important; }
 
-        /* COMPOSER (INPUT) */
         .composer {
             padding: 10px 20px; background: var(--surface);
             display: none; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 5;
@@ -276,7 +267,7 @@
         .btn-cancel { padding: 9px 16px; background: transparent; border: 1px solid var(--line-hi); border-radius: 7px; color: var(--text); cursor: pointer; }
         .btn-confirm-del { padding: 9px 16px; background: var(--red); border: none; border-radius: 7px; color: #fff; cursor: pointer; }
 
-        /* === STATUS VIEWER === */
+        /* STATUS VIEWER */
         .status-viewer {
             position: fixed; inset: 0; z-index: 200000;
             background: #000; display: none; flex-direction: column;
@@ -290,7 +281,7 @@
         .status-content img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .status-close { position: absolute; top: 20px; right: 20px; color: #fff; cursor: pointer; z-index: 10; }
 
-        /* === MOBILE BOTTOM NAV === */
+        /* MOBILE BOTTOM NAV */
         .mobile-nav {
             display: none; background: var(--panel-left);
             border-top: 1px solid var(--line); justify-content: space-around;
@@ -306,7 +297,7 @@
         
         @keyframes fillBar { from { width: 0%; } to { width: 100%; } }
 
-        /* === RESPONSIVE === */
+        /* RESPONSIVE */
         @media (max-width: 768px) {
             .nav-sidebar { display: none; }
             .mobile-nav { display: flex; }
@@ -716,6 +707,7 @@
             document.getElementById('myAvatarNav').addEventListener('click', uploadStatus);
         }
 
+        // FUNGSI UPLOAD STATUS (Sekarang ada di semua tombol)
         function uploadStatus() {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*';

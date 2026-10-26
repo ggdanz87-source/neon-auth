@@ -370,7 +370,6 @@
                     <div class="chat-head-name" id="chatName">—</div>
                     <div class="chat-head-phone" id="chatPhone">—</div>
                 </div>
-                <!-- Tombol Clear Chat udah gw ILANGIN -->
             </div>
 
             <div class="messages" id="messages"></div>
@@ -813,7 +812,7 @@
             `;
         }
 
-        function appendMessage(m) {
+        function appendMessage(m, replyContent = null) {
             if (document.querySelector(`.msg[data-id="${m.id}"]`)) return;
 
             const box = document.getElementById('messages');
@@ -822,9 +821,12 @@
             div.className = `msg ${mine ? 'mine' : 'theirs'}`;
             
             let replyHTML = '';
-            if (m.reply_to_id && m.reply) {
-                const isReplyDeleted = m.reply.content === '[Pesan ini telah dihapus]';
-                const replyText = isReplyDeleted ? 'Pesan telah dihapus' : m.reply.content;
+            // Ambil isi reply dari parameter (kalo baru dikirim) atau dari join tabel (kalo dari load)
+            const actualReplyContent = replyContent || (m.reply ? m.reply.content : null);
+
+            if (m.reply_to_id && actualReplyContent) {
+                const isReplyDeleted = actualReplyContent === '[Pesan ini telah dihapus]';
+                const replyText = isReplyDeleted ? 'Pesan telah dihapus' : actualReplyContent;
                 replyHTML = `
                     <div class="reply-preview">
                         <div style="font-weight: bold; color: var(--accent); font-size: 10px;">Balasan:</div>
@@ -1004,14 +1006,19 @@
             
             const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
             
-            await sb.from('messages').insert({
+            const { data: insertedMsg, error: insErr } = await sb.from('messages').insert({
                 sender_id: currentUser.id,
                 receiver_id: currentChatUser.id,
                 content: '',
                 file_url: urlData.publicUrl,
                 file_type: 'image',
                 reply_to_id: replyingTo ? replyingTo.id : null
-            });
+            }).select().single();
+
+            if (!insErr && insertedMsg) {
+                // Tampilin langsung di layar tanpa nunggu realtime
+                appendMessage(insertedMsg, replyingTo ? (replyingTo.content || (replyingTo.file_type === 'image' ? '[Gambar]' : '[Voice Note]')) : null);
+            }
 
             cancelReply();
             e.target.value = ''; 
@@ -1049,14 +1056,18 @@
 
                         const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
                         
-                        await sb.from('messages').insert({
+                        const { data: insertedMsg, error: insErr } = await sb.from('messages').insert({
                             sender_id: currentUser.id,
                             receiver_id: currentChatUser.id,
                             content: '',
                             file_url: urlData.publicUrl,
                             file_type: 'audio',
                             reply_to_id: replyingTo ? replyingTo.id : null
-                        });
+                        }).select().single();
+
+                        if (!insErr && insertedMsg) {
+                            appendMessage(insertedMsg, replyingTo ? (replyingTo.content || (replyingTo.file_type === 'image' ? '[Gambar]' : '[Voice Note]')) : null);
+                        }
 
                         cancelReply();
                     };
@@ -1102,14 +1113,20 @@
                 if (severity === 'high') showToxicWarning();
             }
 
-            const { error: insErr } = await sb.from('messages').insert({
+            const { data: insertedMsg, error: insErr } = await sb.from('messages').insert({
                 sender_id: currentUser.id,
                 receiver_id: currentChatUser.id,
                 content,
                 reply_to_id: replyingTo ? replyingTo.id : null
-            });
+            }).select().single();
 
-            if (insErr) console.error('Gagal kirim pesan:', insErr);
+            if (!insErr && insertedMsg) {
+                // Tampilin langsung pesan baru
+                appendMessage(insertedMsg, replyingTo ? (replyingTo.content || (replyingTo.file_type === 'image' ? '[Gambar]' : '[Voice Note]')) : null);
+            } else if (insErr) {
+                console.error('Gagal kirim pesan:', insErr);
+            }
+            
             cancelReply();
         }
 

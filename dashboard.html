@@ -279,8 +279,9 @@
         .ctx-item:hover { background: var(--glass-hover); }
         .ctx-item.danger { color: var(--red); }
         
+        /* Z-INDEX MODAL DI PERBESAR BIAR DI ATAS STATUS VIEWER */
         .modal-overlay {
-            position: fixed; inset: 0; z-index: 100000;
+            position: fixed; inset: 0; z-index: 300000; 
             background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
             display: none; align-items: center; justify-content: center;
         }

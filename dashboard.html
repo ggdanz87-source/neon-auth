@@ -279,7 +279,6 @@
         .ctx-item:hover { background: var(--glass-hover); }
         .ctx-item.danger { color: var(--red); }
         
-        /* Z-INDEX MODAL DI PERBESAR BIAR DI ATAS STATUS VIEWER */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 300000; 
             background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
@@ -706,7 +705,7 @@
                 statusListContainer.style.display = 'block';
                 searchContainer.style.display = 'none';
                 panelTitle.textContent = 'Status';
-                loadStatuses();
+                loadStatuses(); // Panggil fungsi load pas tab dibuka
                 headerActionBtn.title = "Upload Status Baru";
             }
         }
@@ -762,11 +761,12 @@
                 showModal('Hapus Status?', 'Status ini akan dihapus permanen.', 'Hapus', 'danger', async () => {
                     await sb.from('status').delete().eq('id', activeStatusId);
                     document.getElementById('statusViewer').classList.remove('show');
-                    loadStatuses();
+                    await loadStatuses(); // Paksa load ulang setelah hapus
                 });
             });
         }
 
+        // === FUNGSI UPLOAD STATUS ===
         function uploadStatus() {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*';
@@ -778,16 +778,16 @@
                 if(upErr) return showModal('Gagal', 'Gagal upload status: ' + upErr.message, 'Tutup', 'primary', null);
                 const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
                 
+                // Insert ke database
                 await sb.from('status').insert({
                     user_id: currentUser.id,
                     file_url: urlData.publicUrl,
                     file_type: 'image'
                 });
                 
-                // --- BAGIAN INI YANG GW UBAH ---
-                // Abis sukses, langsung pindah ke tab Status dan refresh list-nya
-                switchTab('status'); 
-                loadStatuses();
+                // LANGSUNG PINDAH TAB & REFRESH LIST
+                switchTab('status');
+                await loadStatuses();
                 
                 showModal('Sukses', 'Status berhasil diupload!', 'Oke', 'primary', null);
             };

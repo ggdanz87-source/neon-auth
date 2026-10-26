@@ -154,13 +154,45 @@
         .msg.mine { align-self: flex-end; background: var(--accent); color: #04121a; font-weight: 500; border-bottom-right-radius: 4px; }
         .msg.theirs { align-self: flex-start; background: var(--surface-2); color: var(--text); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
         
-        /* Reply UI */
+        /* === UI REPLY (DIPERKECIL & DIPERINDI) === */
         .reply-preview {
-            background: rgba(0,0,0,0.1); border-left: 3px solid rgba(0,0,0,0.3);
-            padding: 6px 10px; border-radius: 4px; margin-bottom: 6px;
-            font-size: 12px; opacity: 0.8;
+            background: rgba(0,0,0,0.08);
+            border-left: 3px solid var(--accent);
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 11.5px;
+            line-height: 1.3;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-width: 100%;
         }
-        .msg.theirs .reply-preview { background: rgba(255,255,255,0.05); border-left-color: var(--accent); }
+        .msg.mine .reply-preview {
+            background: rgba(0,0,0,0.12);
+            border-left-color: #04121a;
+        }
+        .msg.theirs .reply-preview {
+            background: rgba(255,255,255,0.05);
+            border-left-color: var(--accent);
+        }
+        
+        /* Teks yang dibalas: 1 baris + titik-titik */
+        .reply-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.8;
+        }
+        /* Nama pengirim yang dibalas */
+        .reply-name {
+            font-weight: 700;
+            font-size: 10px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .msg.mine .reply-name { color: #04121a; }
         
         .msg img { max-width: 100%; border-radius: 8px; margin-top: 5px; display: block; }
         .msg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 4px; font-size: 10px; opacity: 0.7; }
@@ -189,6 +221,7 @@
         }
         .composer.show { display: flex; }
         
+        /* Reply Bar di atas input */
         .reply-bar {
             width: 100%; padding: 8px 12px; background: var(--surface-2);
             border-left: 3px solid var(--accent); border-radius: 6px;
@@ -196,7 +229,10 @@
             font-size: 12px; color: var(--text-dim); margin-bottom: 5px;
         }
         .reply-bar.show { display: flex; }
-        .reply-bar-close { cursor: pointer; color: var(--red); font-weight: bold; }
+        .reply-bar-content { min-width: 0; display: flex; flex-direction: column; }
+        .reply-bar-title { font-size: 10px; color: var(--accent); font-weight: bold; }
+        .reply-bar-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
+        .reply-bar-close { cursor: pointer; color: var(--red); font-weight: bold; padding: 0 5px; }
 
         .composer input[type="text"] {
             flex: 1; padding: 11px 15px; background: var(--bg); min-width: 100px;
@@ -312,6 +348,7 @@
             .action-btn svg { width: 16px; height: 16px; }
             
             .vn-container { min-width: 180px; }
+            .reply-bar-text { max-width: 180px; }
         }
     </style>
 </head>
@@ -376,9 +413,9 @@
 
             <div class="composer" id="composer">
                 <div class="reply-bar" id="replyBar">
-                    <div style="min-width: 0;">
-                        <div style="font-size: 10px; color: var(--accent); font-weight: bold;">Membalas pesan:</div>
-                        <div id="replyText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                    <div class="reply-bar-content">
+                        <div class="reply-bar-title">Membalas pesan:</div>
+                        <div id="replyText" class="reply-bar-text"></div>
                     </div>
                     <span class="reply-bar-close" id="cancelReply">✕</span>
                 </div>
@@ -829,8 +866,8 @@
                 const replyText = isReplyDeleted ? 'Pesan telah dihapus' : actualReplyContent;
                 replyHTML = `
                     <div class="reply-preview">
-                        <div style="font-weight: bold; color: var(--accent); font-size: 10px;">Balasan:</div>
-                        ${replyText}
+                        <div class="reply-name">Balasan</div>
+                        <div class="reply-text">${replyText}</div>
                     </div>
                 `;
             }
@@ -1016,7 +1053,6 @@
             }).select().single();
 
             if (!insErr && insertedMsg) {
-                // Tampilin langsung di layar tanpa nunggu realtime
                 appendMessage(insertedMsg, replyingTo ? (replyingTo.content || (replyingTo.file_type === 'image' ? '[Gambar]' : '[Voice Note]')) : null);
             }
 
@@ -1121,7 +1157,6 @@
             }).select().single();
 
             if (!insErr && insertedMsg) {
-                // Tampilin langsung pesan baru
                 appendMessage(insertedMsg, replyingTo ? (replyingTo.content || (replyingTo.file_type === 'image' ? '[Gambar]' : '[Voice Note]')) : null);
             } else if (insErr) {
                 console.error('Gagal kirim pesan:', insErr);

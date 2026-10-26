@@ -30,7 +30,12 @@
         }
         
         .shell {
-            display: flex; width: 100%; height: 100vh;
+            display: flex; width: 100%; height: 100vh; flex-direction: column;
+        }
+
+        /* === LAYOUT UTAMA === */
+        .main-layout {
+            display: flex; flex: 1; overflow: hidden;
         }
 
         /* === SIDEBAR KIRI (IKON) === */
@@ -44,7 +49,7 @@
             width: 42px; height: 42px; border-radius: 50%;
             background: var(--surface-2); border: 1px solid var(--line);
             display: flex; align-items: center; justify-content: center;
-            font-weight: bold; color: var(--accent); margin-bottom: 20px;
+            font-weight: bold; color: var(--accent); margin-bottom: 10px;
             overflow: hidden; background-size: cover; background-position: center;
             cursor: pointer;
         }
@@ -58,6 +63,14 @@
         .nav-btn.active { background: var(--surface-2); color: var(--accent); }
         .nav-btn svg { width: 22px; height: 22px; }
         
+        /* Tombol Owner di Sidebar */
+        .nav-btn.owner-btn { background: rgba(255, 71, 87, 0.1); color: var(--red); border: 1px solid rgba(255, 71, 87, 0.3); display: none; }
+        .nav-btn.owner-btn:hover { background: rgba(255, 71, 87, 0.2); }
+        
+        /* Tombol Add Status */
+        .nav-btn.add-status-btn { color: var(--purple); }
+        .nav-btn.add-status-btn:hover { background: rgba(157, 78, 221, 0.1); }
+
         .nav-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 
         /* === PANEL KEDUA (LIST CHAT) === */
@@ -130,14 +143,12 @@
         .chat {
             flex: 1; display: flex; flex-direction: column;
             background: var(--bg); position: relative;
-            /* Background Doodle WA */
             background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
             background-repeat: repeat;
             background-blend-mode: soft-light;
             background-size: 400px;
         }
         body.light-mode .chat {
-            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
             background-blend-mode: overlay;
             opacity: 0.9;
         }
@@ -282,9 +293,26 @@
         .status-content img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .status-close { position: absolute; top: 20px; right: 20px; color: #fff; cursor: pointer; z-index: 10; }
 
+        /* === MOBILE BOTTOM NAV === */
+        .mobile-nav {
+            display: none; background: var(--panel-left);
+            border-top: 1px solid var(--line); justify-content: space-around;
+            padding: 8px 0; z-index: 30;
+        }
+        .mobile-nav-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            background: transparent; border: none; color: var(--text-dim);
+            font-size: 10px; font-family: inherit; cursor: pointer; width: 60px;
+        }
+        .mobile-nav-btn.active { color: var(--accent); }
+        .mobile-nav-btn svg { width: 22px; height: 22px; }
+        
+        @keyframes fillBar { from { width: 0%; } to { width: 100%; } }
+
         /* === RESPONSIVE === */
         @media (max-width: 768px) {
-            .nav-sidebar { display: none; } /* Sembunyiin sidebar ikon di HP */
+            .nav-sidebar { display: none; }
+            .mobile-nav { display: flex; }
             
             .list-panel {
                 width: 100%; position: absolute; inset: 0; z-index: 10;
@@ -306,109 +334,138 @@
 </head>
 <body>
     <div class="shell">
-        <!-- NAVIGASI KIRI (DESKTOP) -->
-        <nav class="nav-sidebar">
-            <div class="nav-profile" id="myAvatarNav"></div>
-            
-            <button class="nav-btn active" id="navChatBtn" title="Chat">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            </button>
-            
-            <button class="nav-btn" id="navStatusBtn" title="Status">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </button>
-
-            <div class="nav-bottom">
-                <a href="profile.html" class="nav-btn" title="Edit Profil">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                </a>
-                <button class="nav-btn" id="themeBtn" title="Ganti Tema">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                </button>
-                <button class="nav-btn" id="logoutBtn" title="Keluar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                </button>
-            </div>
-        </nav>
-
-        <!-- PANEL LIST CHAT -->
-        <aside class="list-panel" id="listPanel">
-            <div class="list-header">
-                <div class="list-title" id="panelTitle">Chat</div>
-                <a href="owner.html" class="nav-btn owner-active" id="ownerBtn" style="display:none; width:36px; height:36px; background:var(--surface-2);" title="Panel owner">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7l3-7z"/></svg>
-                </a>
-            </div>
-
-            <div class="search" id="searchContainer">
-                <div class="search-input-wrap">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                    <input type="text" id="searchInput" placeholder="Cari nomor atau nama...">
-                </div>
-                <div class="search-hint" id="searchHint" style="font-size:10px; color:var(--text-mute); margin-top:5px;">Ketik nomor lengkap untuk mencari</div>
-            </div>
-
-            <div class="search-result" id="searchResult"></div>
-
-            <div class="list-scroll" id="chatListContainer">
-                <div class="list-label" id="listLabel">Semua Pengguna</div>
-                <div id="userList">
-                    <div style="padding: 20px; text-align: center; color: var(--text-mute); font-size: 12px;">Memuat...</div>
-                </div>
-            </div>
-
-            <div class="list-scroll" id="statusListContainer" style="display: none;">
-                <div class="list-label">Status Terbaru</div>
-                <div id="statusList">
-                    <div style="padding: 20px; text-align: center; color: var(--text-mute); font-size: 12px;">Belum ada status.</div>
-                </div>
-            </div>
-        </aside>
-
-        <main class="chat" id="mainChat">
-            <div class="empty" id="emptyChat" style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:var(--text-mute); gap:15px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:60px;height:60px;opacity:0.3;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <p>Pilih percakapan atau status untuk mulai</p>
-            </div>
-
-            <div class="chat-head" id="chatHeader">
-                <button class="back-btn" id="backBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-                </button>
-                <div class="avatar" id="chatAvatar"></div>
-                <div class="chat-head-info">
-                    <div class="chat-head-name" id="chatName">—</div>
-                    <div class="chat-head-phone" id="chatPhone">—</div>
-                </div>
-            </div>
-
-            <div class="messages" id="messages"></div>
-
-            <div class="composer" id="composer">
-                <div class="reply-bar" id="replyBar">
-                    <div class="reply-bar-content">
-                        <div class="reply-bar-title">Membalas pesan:</div>
-                        <div id="replyText" class="reply-bar-text"></div>
-                    </div>
-                    <span class="reply-bar-close" id="cancelReply">✕</span>
-                </div>
-
-                <button class="action-btn" id="attachBtn" title="Kirim Gambar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-                </button>
-                <input type="file" id="fileInput" accept="image/*">
-
-                <button class="action-btn" id="recordBtn" title="Rekam Suara">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                </button>
-
-                <input type="text" id="messageInput" placeholder="Tulis pesan..." autocomplete="off">
+        <div class="main-layout">
+            <!-- NAVIGASI KIRI (DESKTOP) -->
+            <nav class="nav-sidebar">
+                <div class="nav-profile" id="myAvatarNav"></div>
                 
-                <button class="send-btn" id="sendBtn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <button class="nav-btn active" id="navChatBtn" title="Chat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                 </button>
-            </div>
-        </main>
+                
+                <button class="nav-btn" id="navStatusBtn" title="Status">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </button>
+
+                <button class="nav-btn add-status-btn" id="addStatusBtn" title="Tambah Status">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+
+                <a href="owner.html" class="nav-btn owner-btn" id="ownerBtn" title="Panel Owner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7l3-7z"/></svg>
+                </a>
+
+                <div class="nav-bottom">
+                    <a href="profile.html" class="nav-btn" title="Edit Profil">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    </a>
+                    <button class="nav-btn" id="themeBtn" title="Ganti Tema">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    </button>
+                    <button class="nav-btn" id="logoutBtn" title="Keluar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- PANEL LIST CHAT -->
+            <aside class="list-panel" id="listPanel">
+                <div class="list-header">
+                    <div class="list-title" id="panelTitle">Chat</div>
+                    <!-- Tombol Owner (kalau di desktop udah ada di sidebar, ini opsional) -->
+                </div>
+
+                <div class="search" id="searchContainer">
+                    <div class="search-input-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                        <input type="text" id="searchInput" placeholder="Cari nomor atau nama...">
+                    </div>
+                    <div style="font-size:10px; color:var(--text-mute); margin-top:5px;">Ketik nomor lengkap untuk mencari</div>
+                </div>
+
+                <div class="search-result" id="searchResult"></div>
+
+                <div class="list-scroll" id="chatListContainer">
+                    <div class="list-label" id="listLabel">Semua Pengguna</div>
+                    <div id="userList">
+                        <div style="padding: 20px; text-align: center; color: var(--text-mute); font-size: 12px;">Memuat...</div>
+                    </div>
+                </div>
+
+                <div class="list-scroll" id="statusListContainer" style="display: none;">
+                    <div class="list-label">Status Terbaru</div>
+                    <div id="statusList">
+                        <div style="padding: 20px; text-align: center; color: var(--text-mute); font-size: 12px;">Belum ada status.</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- AREA CHAT -->
+            <main class="chat" id="mainChat">
+                <div class="empty" id="emptyChat" style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; color:var(--text-mute); gap:15px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:60px;height:60px;opacity:0.3;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    <p>Pilih percakapan atau status untuk mulai</p>
+                </div>
+
+                <div class="chat-head" id="chatHeader">
+                    <button class="back-btn" id="backBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                    </button>
+                    <div class="avatar" id="chatAvatar"></div>
+                    <div class="chat-head-info">
+                        <div class="chat-head-name" id="chatName">—</div>
+                        <div class="chat-head-phone" id="chatPhone">—</div>
+                    </div>
+                </div>
+
+                <div class="messages" id="messages"></div>
+
+                <div class="composer" id="composer">
+                    <div class="reply-bar" id="replyBar">
+                        <div class="reply-bar-content">
+                            <div class="reply-bar-title">Membalas pesan:</div>
+                            <div id="replyText" class="reply-bar-text"></div>
+                        </div>
+                        <span class="reply-bar-close" id="cancelReply">✕</span>
+                    </div>
+
+                    <button class="action-btn" id="attachBtn" title="Kirim Gambar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                    </button>
+                    <input type="file" id="fileInput" accept="image/*">
+
+                    <button class="action-btn" id="recordBtn" title="Rekam Suara">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    </button>
+
+                    <input type="text" id="messageInput" placeholder="Tulis pesan..." autocomplete="off">
+                    
+                    <button class="send-btn" id="sendBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- MOBILE BOTTOM NAV -->
+        <nav class="mobile-nav">
+            <button class="mobile-nav-btn active" id="mobNavChatBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                Chat
+            </button>
+            <button class="mobile-nav-btn" id="mobNavStatusBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Status
+            </button>
+            <button class="mobile-nav-btn" id="mobAddStatusBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Bikin
+            </button>
+            <a href="profile.html" class="mobile-nav-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Profil
+            </a>
+        </nav>
     </div>
 
     <div class="ctx-menu" id="ctxMenu">
@@ -583,6 +640,42 @@
             modalCallback = null;
         });
 
+        function switchTab(tab) {
+            currentTab = tab;
+            const navChatBtn = document.getElementById('navChatBtn');
+            const navStatusBtn = document.getElementById('navStatusBtn');
+            const mobNavChatBtn = document.getElementById('mobNavChatBtn');
+            const mobNavStatusBtn = document.getElementById('mobNavStatusBtn');
+            
+            const chatListContainer = document.getElementById('chatListContainer');
+            const statusListContainer = document.getElementById('statusListContainer');
+            const searchContainer = document.getElementById('searchContainer');
+            const panelTitle = document.getElementById('panelTitle');
+
+            if (tab === 'chat') {
+                if(navChatBtn) navChatBtn.classList.add('active');
+                if(navStatusBtn) navStatusBtn.classList.remove('active');
+                if(mobNavChatBtn) mobNavChatBtn.classList.add('active');
+                if(mobNavStatusBtn) mobNavStatusBtn.classList.remove('active');
+                
+                chatListContainer.style.display = 'block';
+                statusListContainer.style.display = 'none';
+                searchContainer.style.display = 'block';
+                panelTitle.textContent = 'Chat';
+            } else {
+                if(navStatusBtn) navStatusBtn.classList.add('active');
+                if(navChatBtn) navChatBtn.classList.remove('active');
+                if(mobNavStatusBtn) mobNavStatusBtn.classList.add('active');
+                if(mobNavChatBtn) mobNavChatBtn.classList.remove('active');
+                
+                chatListContainer.style.display = 'none';
+                statusListContainer.style.display = 'block';
+                searchContainer.style.display = 'none';
+                panelTitle.textContent = 'Status';
+                loadStatuses();
+            }
+        }
+
         async function init() {
             initTheme();
 
@@ -598,7 +691,7 @@
             if(!profile.avatar_url) document.getElementById('myAvatarNav').textContent = (profile.full_name || 'U').charAt(0).toUpperCase();
 
             if (isOwner) {
-                document.getElementById('ownerBtn').style.display = 'inline-flex';
+                document.getElementById('ownerBtn').style.display = 'flex';
             }
 
             await loadUsers();
@@ -612,48 +705,41 @@
                 document.body.classList.remove('show-chat');
             });
             
-            document.getElementById('navChatBtn').addEventListener('click', () => {
-                currentTab = 'chat';
-                document.getElementById('navChatBtn').classList.add('active');
-                document.getElementById('navStatusBtn').classList.remove('active');
-                document.getElementById('chatListContainer').style.display = 'block';
-                document.getElementById('statusListContainer').style.display = 'none';
-                document.getElementById('searchContainer').style.display = 'block';
-                document.getElementById('panelTitle').textContent = 'Chat';
-            });
-
-            document.getElementById('navStatusBtn').addEventListener('click', () => {
-                currentTab = 'status';
-                document.getElementById('navStatusBtn').classList.add('active');
-                document.getElementById('navChatBtn').classList.remove('active');
-                document.getElementById('chatListContainer').style.display = 'none';
-                document.getElementById('statusListContainer').style.display = 'block';
-                document.getElementById('searchContainer').style.display = 'none';
-                document.getElementById('panelTitle').textContent = 'Status';
-                loadStatuses();
-            });
+            // Tab Listeners Desktop
+            if(document.getElementById('navChatBtn')) document.getElementById('navChatBtn').addEventListener('click', () => switchTab('chat'));
+            if(document.getElementById('navStatusBtn')) document.getElementById('navStatusBtn').addEventListener('click', () => switchTab('status'));
             
-            document.getElementById('myAvatarNav').addEventListener('click', () => {
-                const input = document.createElement('input');
-                input.type = 'file'; input.accept = 'image/*';
-                input.onchange = async (e) => {
-                    const file = e.target.files[0];
-                    if(!file) return;
-                    const fileName = `status/${currentUser.id}/${Date.now()}.jpg`;
-                    const { error: upErr } = await sb.storage.from('chat_uploads').upload(fileName, file);
-                    if(upErr) return showModal('Gagal', 'Gagal upload status: ' + upErr.message, 'Tutup', 'primary', null);
-                    const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
-                    
-                    await sb.from('status').insert({
-                        user_id: currentUser.id,
-                        file_url: urlData.publicUrl,
-                        file_type: 'image'
-                    });
-                    showModal('Sukses', 'Status berhasil diupload!', 'Oke', 'primary', null);
-                    if(currentTab === 'status') loadStatuses();
-                };
-                input.click();
-            });
+            // Tab Listeners Mobile
+            if(document.getElementById('mobNavChatBtn')) document.getElementById('mobNavChatBtn').addEventListener('click', () => switchTab('chat'));
+            if(document.getElementById('mobNavStatusBtn')) document.getElementById('mobNavStatusBtn').addEventListener('click', () => switchTab('status'));
+            
+            // Add Status Buttons
+            if(document.getElementById('addStatusBtn')) document.getElementById('addStatusBtn').addEventListener('click', uploadStatus);
+            if(document.getElementById('mobAddStatusBtn')) document.getElementById('mobAddStatusBtn').addEventListener('click', uploadStatus);
+            
+            document.getElementById('myAvatarNav').addEventListener('click', uploadStatus);
+        }
+
+        function uploadStatus() {
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = 'image/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const fileName = `status/${currentUser.id}/${Date.now()}.jpg`;
+                const { error: upErr } = await sb.storage.from('chat_uploads').upload(fileName, file);
+                if(upErr) return showModal('Gagal', 'Gagal upload status: ' + upErr.message, 'Tutup', 'primary', null);
+                const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
+                
+                await sb.from('status').insert({
+                    user_id: currentUser.id,
+                    file_url: urlData.publicUrl,
+                    file_type: 'image'
+                });
+                showModal('Sukses', 'Status berhasil diupload!', 'Oke', 'primary', null);
+                if(currentTab === 'status') loadStatuses();
+            };
+            input.click();
         }
 
         async function loadUsers() {
@@ -1256,8 +1342,5 @@
 
         init();
     </script>
-    <style>
-        @keyframes fillBar { from { width: 0%; } to { width: 100%; } }
-    </style>
 </body>
 </html>

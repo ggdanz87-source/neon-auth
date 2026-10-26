@@ -64,9 +64,6 @@
         
         .nav-btn.owner-btn { background: rgba(255, 71, 87, 0.1); color: var(--red); border: 1px solid rgba(255, 71, 87, 0.3); display: none; }
         .nav-btn.owner-btn:hover { background: rgba(255, 71, 87, 0.2); }
-        
-        .nav-btn.add-status-btn { color: var(--purple); }
-        .nav-btn.add-status-btn:hover { background: rgba(157, 78, 221, 0.1); }
 
         .nav-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 
@@ -77,12 +74,24 @@
             display: flex; flex-direction: column; flex-shrink: 0;
             transition: transform 0.3s ease;
         }
+        
+        /* HEADER PANEL */
         .list-header {
             padding: 20px; border-bottom: 1px solid var(--line);
             display: flex; justify-content: space-between; align-items: center;
         }
         .list-title { font-size: 20px; font-weight: 700; color: var(--text); }
         
+        /* TOMBOL PLUS DI KANAN */
+        .header-actions { display: flex; gap: 10px; }
+        .action-icon-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--surface-2); border: 1px solid var(--line);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-dim); cursor: pointer; transition: 0.2s;
+        }
+        .action-icon-btn:hover { background: var(--line); color: var(--accent); }
+
         .search { padding: 10px 15px; border-bottom: 1px solid var(--line); }
         .search-input-wrap { position: relative; }
         .search-input-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-mute); pointer-events: none; }
@@ -163,7 +172,6 @@
         .messages::-webkit-scrollbar { width: 6px; }
         .messages::-webkit-scrollbar-thumb { background: var(--line-hi); border-radius: 3px; }
         
-        /* BUBBLE CHAT */
         .msg {
             max-width: 65%; padding: 8px 12px; font-size: 14px;
             line-height: 1.4; border-radius: 8px; word-wrap: break-word; white-space: pre-wrap;
@@ -335,10 +343,6 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </button>
 
-                <button class="nav-btn add-status-btn" id="addStatusBtn" title="Tambah Status">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </button>
-
                 <a href="owner.html" class="nav-btn owner-btn" id="ownerBtn" title="Panel Owner">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7l3-7z"/></svg>
                 </a>
@@ -360,6 +364,12 @@
             <aside class="list-panel" id="listPanel">
                 <div class="list-header">
                     <div class="list-title" id="panelTitle">Chat</div>
+                    <!-- TOMBOL PLUS DIPINDAH KE SINI -->
+                    <div class="header-actions">
+                        <button class="action-icon-btn" id="headerActionBtn" title="Tambah">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="search" id="searchContainer">
@@ -638,6 +648,7 @@
             const statusListContainer = document.getElementById('statusListContainer');
             const searchContainer = document.getElementById('searchContainer');
             const panelTitle = document.getElementById('panelTitle');
+            const headerActionBtn = document.getElementById('headerActionBtn');
 
             if (tab === 'chat') {
                 if(navChatBtn) navChatBtn.classList.add('active');
@@ -649,6 +660,9 @@
                 statusListContainer.style.display = 'none';
                 searchContainer.style.display = 'block';
                 panelTitle.textContent = 'Chat';
+                
+                // Tombol plus buat chat baru
+                headerActionBtn.title = "Mulai Chat Baru";
             } else {
                 if(navStatusBtn) navStatusBtn.classList.add('active');
                 if(navChatBtn) navChatBtn.classList.remove('active');
@@ -660,6 +674,9 @@
                 searchContainer.style.display = 'none';
                 panelTitle.textContent = 'Status';
                 loadStatuses();
+                
+                // Tombol plus buat upload status
+                headerActionBtn.title = "Upload Status Baru";
             }
         }
 
@@ -700,14 +717,21 @@
             if(document.getElementById('mobNavChatBtn')) document.getElementById('mobNavChatBtn').addEventListener('click', () => switchTab('chat'));
             if(document.getElementById('mobNavStatusBtn')) document.getElementById('mobNavStatusBtn').addEventListener('click', () => switchTab('status'));
             
-            // Add Status Buttons
-            if(document.getElementById('addStatusBtn')) document.getElementById('addStatusBtn').addEventListener('click', uploadStatus);
+            // Tombol Plus di Header
+            document.getElementById('headerActionBtn').addEventListener('click', () => {
+                if (currentTab === 'chat') {
+                    // Kalo di tab chat, arahin ke search biar bisa cari orang baru
+                    document.getElementById('searchInput').focus();
+                } else {
+                    // Kalo di tab status, buka file picker buat upload status
+                    uploadStatus();
+                }
+            });
+
             if(document.getElementById('mobAddStatusBtn')) document.getElementById('mobAddStatusBtn').addEventListener('click', uploadStatus);
-            
             document.getElementById('myAvatarNav').addEventListener('click', uploadStatus);
         }
 
-        // FUNGSI UPLOAD STATUS (Sekarang ada di semua tombol)
         function uploadStatus() {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*';

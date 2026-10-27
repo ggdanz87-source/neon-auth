@@ -311,12 +311,40 @@
         .status-content img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .status-close { position: absolute; top: 20px; right: 20px; color: #fff; cursor: pointer; z-index: 10; }
         
-        /* Tombol Hapus Status (di dalam Viewer) */
         .status-delete { 
             position: absolute; top: 20px; right: 60px; color: #fff; cursor: pointer; 
             z-index: 10; display: none; background: rgba(255,0,0,0.3); padding: 5px; border-radius: 50%;
         }
         .status-delete svg { width: 20px; height: 20px; fill: #fff; }
+
+        /* MODAL GROUP CHAT */
+        .group-modal {
+            position: fixed; inset: 0; z-index: 300000;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center;
+        }
+        .group-modal.show { display: flex; }
+        .group-box {
+            background: var(--glass); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px; padding: 24px; max-width: 400px; width: 90%;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .group-box h3 { margin-bottom: 15px; font-size: 18px; }
+        .group-box input {
+            width: 100%; padding: 10px; margin-bottom: 15px;
+            background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border);
+            border-radius: 8px; color: var(--text); outline: none;
+        }
+        .member-list {
+            max-height: 200px; overflow-y: auto;
+            border: 1px solid var(--glass-border); border-radius: 8px; margin-bottom: 15px;
+        }
+        .member-item {
+            padding: 8px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;
+        }
+        .member-item:hover { background: var(--glass-hover); }
+        .member-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
 
         /* MOBILE BOTTOM NAV */
         .mobile-nav {
@@ -514,7 +542,6 @@
         <div class="status-header">
             <div class="avatar" id="viewerAvatar" style="width:40px;height:40px;"></div>
             <div style="color:#fff; font-weight:600;" id="viewerName">Nama</div>
-            <!-- Tombol Hapus Status -->
             <div class="status-delete" id="deleteStatusBtn" title="Hapus Status">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             </div>
@@ -522,6 +549,20 @@
         </div>
         <div class="status-progress" id="statusProgress"></div>
         <div class="status-content" id="statusContent"></div>
+    </div>
+
+    <!-- MODAL GROUP CHAT -->
+    <div class="group-modal" id="groupModal">
+        <div class="group-box">
+            <h3>Bikin Grup Baru</h3>
+            <input type="text" id="groupNameInput" placeholder="Nama Grup (contoh: Anak Sultan)">
+            <p style="font-size:12px; margin-bottom:10px; color:var(--text-dim);">Pilih anggota:</p>
+            <div class="member-list" id="memberList"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="closeGroupModal">Batal</button>
+                <button class="btn-confirm-del" style="background:var(--accent); color:#000;" id="createGroupBtn">Buat Grup</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -581,7 +622,7 @@
         let currentProfile = null;
         let currentChatUser = null;
         let messageSubscription = null;
-        let statusSubscription = null; // BARU: Listener buat status
+        let statusSubscription = null;
         let allUsers = [];
         let isOwner = false;
         let activeMessage = null;
@@ -589,6 +630,7 @@
         let replyingTo = null;
         
         let activeStatusId = null; 
+        let activeGroupId = null; // Kalo lagi buka group chat
 
         let mediaRecorder;
         let audioChunks = [];
@@ -695,7 +737,7 @@
                 statusListContainer.style.display = 'none';
                 searchContainer.style.display = 'block';
                 panelTitle.textContent = 'Chat';
-                headerActionBtn.title = "Mulai Chat Baru";
+                headerActionBtn.title = "Bikin Grup Baru";
             } else {
                 if(navStatusBtn) navStatusBtn.classList.add('active');
                 if(navChatBtn) navChatBtn.classList.remove('active');
@@ -706,11 +748,12 @@
                 statusListContainer.style.display = 'block';
                 searchContainer.style.display = 'none';
                 panelTitle.textContent = 'Status';
-                loadStatuses(); // Panggil fungsi load pas tab dibuka
+                loadStatuses();
                 headerActionBtn.title = "Upload Status Baru";
             }
         }
 
+        // === INIT & NOTIFIKASI PUSH ===
         async function init() {
             initTheme();
 
@@ -731,21 +774,55 @@
 
             await loadUsers();
 
-            // Heartbeat Online
             await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
             setInterval(() => {
                 sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
             }, 30000);
 
-            // Listener Realtime buat Status (BARU)
+            // === DAFTARIN SERVICE WORKER BUAT NOTIF ===
+            if ('serviceWorker' in navigator) {
+                try {
+                    const reg = await navigator.serviceWorker.register('/sw.js');
+                    console.log('Service Worker Registered');
+                    // Minta izin notif
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        console.log('Notif diizinkan');
+                    }
+                } catch (e) { console.error('SW Error:', e); }
+            }
+
+            // === LISTENER NOTIF (Kalo ada chat masuk) ===
+            sb.channel('notif-realtime')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
+                    const m = payload.new;
+                    if (m.receiver_id === currentUser.id && m.sender_id !== currentUser.id) {
+                        // Ambil nama pengirim
+                        const { data: sender } = await sb.from('profiles').select('full_name').eq('id', m.sender_id).single();
+                        const senderName = sender?.full_name || 'Seseorang';
+                        const text = m.file_type === 'image' ? '📷 Mengirim gambar' : (m.file_type === 'audio' ? '🎤 Voice Note' : m.content);
+                        
+                        // Tampilkan notif push
+                        if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification(senderName, {
+                                    body: text,
+                                    icon: '/favicon.ico',
+                                    vibrate: [200, 100, 200]
+                                });
+                            });
+                        }
+                        // Mainin suara
+                        playNotifSound();
+                    }
+                })
+                .subscribe();
+
+            // === LISTENER STATUS REALTIME ===
             if (statusSubscription) sb.removeChannel(statusSubscription);
             statusSubscription = sb.channel('status-realtime')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'status' }, (payload) => {
-                    console.log('Status berubah:', payload);
-                    // Kalo lagi buka tab status, refresh list
-                    if (currentTab === 'status') {
-                        loadStatuses();
-                    }
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'status' }, () => {
+                    if (currentTab === 'status') loadStatuses();
                 })
                 .subscribe();
 
@@ -758,9 +835,10 @@
             if(document.getElementById('mobNavChatBtn')) document.getElementById('mobNavChatBtn').addEventListener('click', () => switchTab('chat'));
             if(document.getElementById('mobNavStatusBtn')) document.getElementById('mobNavStatusBtn').addEventListener('click', () => switchTab('status'));
             
+            // Tombol Plus (Grup / Status)
             document.getElementById('headerActionBtn').addEventListener('click', () => {
                 if (currentTab === 'chat') {
-                    document.getElementById('searchInput').focus();
+                    openGroupModal(); // Buka modal bikin grup
                 } else {
                     uploadStatus();
                 }
@@ -775,13 +853,66 @@
                 showModal('Hapus Status?', 'Status ini akan dihapus permanen.', 'Hapus', 'danger', async () => {
                     await sb.from('status').delete().eq('id', activeStatusId);
                     document.getElementById('statusViewer').classList.remove('show');
-                    // Realtime bakal nge-handle refresh-nya, tapi kita panggil manual juga buat jaga-jaga
                     if (currentTab === 'status') await loadStatuses();
                 });
             });
         }
 
-        // === FUNGSI UPLOAD STATUS ===
+        // === BIKIN GRUP (MODAL) ===
+        function openGroupModal() {
+            const modal = document.getElementById('groupModal');
+            const list = document.getElementById('memberList');
+            
+            // Tampilin semua user buat dipilih
+            list.innerHTML = allUsers.map(u => `
+                <label class="member-item">
+                    <input type="checkbox" value="${u.id}">
+                    ${avatarHTML(u)}
+                    <span>${u.full_name || u.username}</span>
+                </label>
+            `).join('');
+            
+            modal.classList.add('show');
+        }
+
+        document.getElementById('closeGroupModal').addEventListener('click', () => {
+            document.getElementById('groupModal').classList.remove('show');
+        });
+
+        document.getElementById('createGroupBtn').addEventListener('click', async () => {
+            const name = document.getElementById('groupNameInput').value.trim();
+            if (!name) return alert('Isi nama grup dulu!');
+            
+            const checkboxes = document.querySelectorAll('#memberList input[type="checkbox"]:checked');
+            if (checkboxes.length === 0) return alert('Pilih minimal 1 anggota!');
+            
+            const memberIds = Array.from(checkboxes).map(c => c.value);
+            
+            // 1. Bikin Grup
+            const { data: newGroup, error: groupErr } = await sb.from('groups').insert({
+                name: name,
+                created_by: currentUser.id
+            }).select().single();
+            
+            if (groupErr) return alert('Gagal bikin grup: ' + groupErr.message);
+            
+            // 2. Masukin lo sebagai member + anggota lain
+            const membersToInsert = [currentUser.id, ...memberIds].map(uid => ({
+                group_id: newGroup.id,
+                user_id: uid
+            }));
+            
+            const { error: memberErr } = await sb.from('group_members').insert(membersToInsert);
+            if (memberErr) return alert('Gagal nambahin member: ' + memberErr.message);
+            
+            document.getElementById('groupModal').classList.remove('show');
+            document.getElementById('groupNameInput').value = '';
+            
+            // Buka chat grup
+            openChat(newGroup.id, newGroup.name, 'Grup', '', 'none', false, true);
+        });
+
+        // === UPLOAD STATUS ===
         function uploadStatus() {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*';
@@ -799,9 +930,8 @@
                     file_type: 'image'
                 });
                 
-                // Pindah tab otomatis (Realtime listener yang bakal refresh list-nya)
                 switchTab('status');
-                
+                if (currentTab === 'status') await loadStatuses();
                 showModal('Sukses', 'Status berhasil diupload!', 'Oke', 'primary', null);
             };
             input.click();
@@ -839,7 +969,7 @@
             list.innerHTML = visible.map(u => {
                 const online = isUserOnline(u.last_seen);
                 return `
-                <div class="user-item" data-id="${u.id}" data-name="${escapeAttr(u.full_name || u.username || 'User')}" data-phone="${u.phone_number || '-'}" data-avatar="${u.avatar_url || ''}" data-badge="${u.badge || 'none'}" data-online="${online}">
+                <div class="user-item" data-id="${u.id}" data-name="${escapeAttr(u.full_name || u.username || 'User')}" data-phone="${u.phone_number || '-'}" data-avatar="${u.avatar_url || ''}" data-badge="${u.badge || 'none'}" data-online="${online}" data-isgroup="false">
                     ${avatarHTML(u)}
                     <div class="user-meta">
                         <div class="user-name">${u.full_name || u.username}${badgeHTML(u.badge)}</div>
@@ -856,7 +986,7 @@
                 el.addEventListener('click', () => {
                     document.querySelectorAll('.user-item').forEach(i => i.classList.remove('active'));
                     el.classList.add('active');
-                    openChat(el.dataset.id, el.dataset.name, el.dataset.phone, el.dataset.avatar, el.dataset.badge, el.dataset.online === 'true');
+                    openChat(el.dataset.id, el.dataset.name, el.dataset.phone, el.dataset.avatar, el.dataset.badge, el.dataset.online === 'true', false);
                 });
             });
         }
@@ -914,22 +1044,22 @@
             searchResult.classList.add('show');
             
             searchResult.onclick = () => {
-                openChat(u.id, u.full_name || u.username, u.phone_number, u.avatar_url, u.badge, online);
+                openChat(u.id, u.full_name || u.username, u.phone_number, u.avatar_url, u.badge, online, false);
                 searchResult.innerHTML = '';
                 searchInput.value = '';
             };
         });
 
-        async function openChat(id, name, phone, avatar, badge, isOnline) {
-            currentChatUser = { id, name, phone, avatar };
+        async function openChat(id, name, phone, avatar, badge, isOnline, isGroup = false) {
+            currentChatUser = { id, name, phone, avatar, isGroup };
             document.getElementById('emptyChat').style.display = 'none';
             document.getElementById('chatHeader').classList.add('show');
             document.getElementById('composer').classList.add('show');
-            document.getElementById('chatName').innerHTML = name + badgeHTML(badge);
+            document.getElementById('chatName').innerHTML = name + (isGroup ? '' : badgeHTML(badge));
             
             document.getElementById('mainChat').classList.add('active-chat');
             
-            const phoneHTML = `<span class="online-dot ${isOnline ? 'online' : ''}"></span> ${phone || '—'}`;
+            const phoneHTML = isGroup ? 'Grup Chat' : `<span class="online-dot ${isOnline ? 'online' : ''}"></span> ${phone || '—'}`;
             document.getElementById('chatPhone').innerHTML = phoneHTML;
 
             const ca = document.getElementById('chatAvatar');
@@ -942,22 +1072,39 @@
             }
 
             document.body.classList.add('show-chat');
-
             cancelReply(); 
-            await loadMessages(id);
-
-            await sb.from('messages').update({ is_read: true }).eq('sender_id', id).eq('receiver_id', currentUser.id).eq('is_read', false);
+            
+            // Kalo group, ambil pesan berdasarkan group_id
+            if (isGroup) {
+                activeGroupId = id;
+                await loadMessages(null, id);
+            } else {
+                activeGroupId = null;
+                await loadMessages(id, null);
+            }
+            
+            // Tandain udah dibaca (kalo private chat)
+            if (!isGroup) {
+                await sb.from('messages').update({ is_read: true }).eq('sender_id', id).eq('receiver_id', currentUser.id).eq('is_read', false);
+            }
 
             if (messageSubscription) messageSubscription.unsubscribe();
+            
+            // Listener Realtime
+            let filterQuery = isGroup ? `group_id=eq.${id}` : `or(and(sender_id.eq.${currentUser.id},receiver_id.eq.${id}),and(sender_id.eq.${id},receiver_id.eq.${currentUser.id}))`;
+            
             messageSubscription = sb.channel('messages-realtime')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
                     const m = payload.new;
-                    if ((m.sender_id === currentUser.id && m.receiver_id === id) ||
-                        (m.sender_id === id && m.receiver_id === currentUser.id)) {
+                    const isRelevant = isGroup 
+                        ? (m.group_id === id)
+                        : ((m.sender_id === currentUser.id && m.receiver_id === id) || (m.sender_id === id && m.receiver_id === currentUser.id));
+                        
+                    if (isRelevant) {
                         appendMessage(m);
-                        if (m.sender_id === id) {
+                        if (m.sender_id !== currentUser.id) {
                             playNotifSound();
-                            sb.from('messages').update({ is_read: true }).eq('id', m.id);
+                            if (!isGroup) sb.from('messages').update({ is_read: true }).eq('id', m.id);
                         }
                     }
                 })
@@ -977,11 +1124,16 @@
                 .subscribe();
         }
 
-        async function loadMessages(otherId) {
-            const { data: messages } = await sb.from('messages')
-                .select('*, reply:reply_to_id(content)')
-                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${currentUser.id})`)
-                .order('created_at', { ascending: true });
+        async function loadMessages(otherId, groupId = null) {
+            let query = sb.from('messages').select('*, reply:reply_to_id(content)').order('created_at', { ascending: true });
+            
+            if (groupId) {
+                query = query.eq('group_id', groupId);
+            } else {
+                query = query.or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${currentUser.id})`);
+            }
+            
+            const { data: messages } = await query;
             
             const { data: deletions } = await sb.from('message_deletions')
                 .select('message_id')
@@ -1214,7 +1366,8 @@
             
             const { data: insertedMsg, error: insErr } = await sb.from('messages').insert({
                 sender_id: currentUser.id,
-                receiver_id: currentChatUser.id,
+                receiver_id: currentChatUser.isGroup ? null : currentChatUser.id,
+                group_id: currentChatUser.isGroup ? currentChatUser.id : null,
                 content: '',
                 file_url: urlData.publicUrl,
                 file_type: 'image',
@@ -1263,7 +1416,8 @@
                         
                         const { data: insertedMsg, error: insErr } = await sb.from('messages').insert({
                             sender_id: currentUser.id,
-                            receiver_id: currentChatUser.id,
+                            receiver_id: currentChatUser.isGroup ? null : currentChatUser.id,
+                            group_id: currentChatUser.isGroup ? currentChatUser.id : null,
                             content: '',
                             file_url: urlData.publicUrl,
                             file_type: 'audio',
@@ -1310,7 +1464,7 @@
             if (matched.length > 0) {
                 await sb.from('moderation_logs').insert({
                     sender_id: currentUser.id,
-                    receiver_id: currentChatUser.id,
+                    receiver_id: currentChatUser.isGroup ? null : currentChatUser.id,
                     content: content,
                     matched_words: matched,
                     severity: severity
@@ -1320,7 +1474,8 @@
 
             const { data: insertedMsg, error: insErr } = await sb.from('messages').insert({
                 sender_id: currentUser.id,
-                receiver_id: currentChatUser.id,
+                receiver_id: currentChatUser.isGroup ? null : currentChatUser.id,
+                group_id: currentChatUser.isGroup ? currentChatUser.id : null,
                 content,
                 reply_to_id: replyingTo ? replyingTo.id : null
             }).select().single();
@@ -1361,7 +1516,7 @@
             window.location.href = 'index.html';
         });
 
-        // === STATUS LOAD (DIPERBAIKI) ===
+        // === STATUS LOAD ===
         async function loadStatuses() {
             const container = document.getElementById('statusList');
             container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-mute);">Memuat...</div>';

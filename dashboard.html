@@ -581,6 +581,7 @@
         let currentProfile = null;
         let currentChatUser = null;
         let messageSubscription = null;
+        let statusSubscription = null; // BARU: Listener buat status
         let allUsers = [];
         let isOwner = false;
         let activeMessage = null;
@@ -730,10 +731,23 @@
 
             await loadUsers();
 
+            // Heartbeat Online
             await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
             setInterval(() => {
                 sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
             }, 30000);
+
+            // Listener Realtime buat Status (BARU)
+            if (statusSubscription) sb.removeChannel(statusSubscription);
+            statusSubscription = sb.channel('status-realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'status' }, (payload) => {
+                    console.log('Status berubah:', payload);
+                    // Kalo lagi buka tab status, refresh list
+                    if (currentTab === 'status') {
+                        loadStatuses();
+                    }
+                })
+                .subscribe();
 
             document.getElementById('backBtn').addEventListener('click', () => {
                 document.body.classList.remove('show-chat');
@@ -761,7 +775,8 @@
                 showModal('Hapus Status?', 'Status ini akan dihapus permanen.', 'Hapus', 'danger', async () => {
                     await sb.from('status').delete().eq('id', activeStatusId);
                     document.getElementById('statusViewer').classList.remove('show');
-                    await loadStatuses(); // Paksa load ulang setelah hapus
+                    // Realtime bakal nge-handle refresh-nya, tapi kita panggil manual juga buat jaga-jaga
+                    if (currentTab === 'status') await loadStatuses();
                 });
             });
         }
@@ -778,16 +793,14 @@
                 if(upErr) return showModal('Gagal', 'Gagal upload status: ' + upErr.message, 'Tutup', 'primary', null);
                 const { data: urlData } = sb.storage.from('chat_uploads').getPublicUrl(fileName);
                 
-                // Insert ke database
                 await sb.from('status').insert({
                     user_id: currentUser.id,
                     file_url: urlData.publicUrl,
                     file_type: 'image'
                 });
                 
-                // LANGSUNG PINDAH TAB & REFRESH LIST
+                // Pindah tab otomatis (Realtime listener yang bakal refresh list-nya)
                 switchTab('status');
-                await loadStatuses();
                 
                 showModal('Sukses', 'Status berhasil diupload!', 'Oke', 'primary', null);
             };
@@ -1350,11 +1363,9 @@
 
         // === STATUS LOAD (DIPERBAIKI) ===
         async function loadStatuses() {
-            // 1. Bersihin kontainer dulu biar gak ada cache DOM
             const container = document.getElementById('statusList');
             container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-mute);">Memuat...</div>';
 
-            // 2. Baru ambil data
             const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             const { data: statuses } = await sb.from('status')
                 .select('*, profiles(full_name, avatar_url)')
@@ -1366,7 +1377,6 @@
                 return;
             }
 
-            // 3. Render data baru
             container.innerHTML = statuses.map(s => {
                 const name = s.profiles?.full_name || 'User';
                 const avatar = s.profiles?.avatar_url || '';

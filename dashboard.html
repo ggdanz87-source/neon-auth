@@ -212,7 +212,22 @@
         
         .msg img { max-width: 100%; border-radius: 6px; margin-top: 5px; display: block; }
         .msg-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 3px; font-size: 10.5px; opacity: 0.7; }
-        .check-svg { width: 14px; height: 14px; }
+        
+        /* === FIX BADGE CENTANG === */
+        .check-svg { 
+            width: 16px; height: 16px; 
+            display: inline-block; 
+            vertical-align: middle;
+            stroke: currentColor;
+        }
+        /* Badge Owner/Biru */
+        .badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-left: 4px;
+        }
+        .badge svg { width: 9px; height: 9px; color: #fff !important; stroke: #fff !important; }
+        .badge.red { background: var(--red); }
+        .badge.blue { background: var(--blue); }
 
         .vn-container { display: flex; align-items: center; gap: 10px; min-width: 220px; padding: 4px; }
         .vn-play-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
@@ -311,7 +326,6 @@
         .status-content img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .status-close { position: absolute; top: 20px; right: 20px; color: #fff; cursor: pointer; z-index: 10; }
         
-        /* Tombol Hapus Status (di dalam Viewer) */
         .status-delete { 
             position: absolute; top: 20px; right: 60px; color: #fff; cursor: pointer; 
             z-index: 10; display: none; background: rgba(255,0,0,0.3); padding: 5px; border-radius: 50%;
@@ -784,7 +798,6 @@
                 try {
                     const reg = await navigator.serviceWorker.register('/sw.js');
                     console.log('Service Worker Registered');
-                    // Minta izin notif
                     const permission = await Notification.requestPermission();
                     if (permission === 'granted') {
                         console.log('Notif diizinkan');
